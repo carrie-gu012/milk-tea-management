@@ -10,11 +10,20 @@ import Inventory from "./pages/Inventory.jsx";
 import LowStock from "./pages/LowStock.jsx";
 import StaffRegister from "./pages/StaffRegister.jsx";
 import RoleGate from "./components/RoleGate.jsx";
+import AppLayout from "./components/AppLayout.jsx";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+
+       <Route
+        element={
+          <RoleGate allow={["ADMIN", "STAFF"]}>
+            <AppLayout />
+          </RoleGate>
+        }
+      ></Route>
 
       <Route
         path="/"

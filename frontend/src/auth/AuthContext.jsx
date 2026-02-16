@@ -1,5 +1,12 @@
 // src/auth/AuthContext.jsx
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useEffect,
+} from "react";
+import { api } from "../api/client.jsx"; // ✅ 用你现成的 fetch 封装
 
 const AuthContext = createContext(null);
 
@@ -10,35 +17,46 @@ export function AuthProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // 先不验证 token（等你后端 auth 做完再加 /auth/me）
     setIsReady(true);
   }, []);
 
-  const value = useMemo(() => ({
-    token,
-    role,
-    username,
-    isReady,
-    login: async (u, p) => {
-      // 这里之后接 /auth/login
-      // 先做一个临时假登录，方便你把页面都跑通
-      const fake = { token: "dev-token", role: "ADMIN", username: u };
-      setToken(fake.token);
-      setRole(fake.role);
-      setUsername(fake.username);
-      localStorage.setItem("token", fake.token);
-      localStorage.setItem("role", fake.role);
-      localStorage.setItem("username", fake.username);
-    },
-    logout: () => {
-      setToken(null);
-      setRole(null);
-      setUsername(null);
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("username");
-    },
-  }), [token, role, username, isReady]);
+  const value = useMemo(
+    () => ({
+      token,
+      role,
+      username,
+      isReady,
+
+      // ✅ 真实登录
+      login: async (u, p) => {
+        // ✅ 写死的管理员账号
+        if (u === "admin" && p === "123456") {
+          const fakeToken = "admin-token";
+          const fakeRole = "ADMIN";
+
+          setToken(fakeToken);
+          setRole(fakeRole);
+          setUsername(u);
+
+          localStorage.setItem("token", fakeToken);
+          localStorage.setItem("role", fakeRole);
+          localStorage.setItem("username", u);
+        } else {
+          throw new Error("Invalid username or password.");
+        }
+      },
+
+      logout: () => {
+        setToken(null);
+        setRole(null);
+        setUsername(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("username");
+      },
+    }),
+    [token, role, username, isReady],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

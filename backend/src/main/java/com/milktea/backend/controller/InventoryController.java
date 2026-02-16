@@ -22,10 +22,7 @@ public class InventoryController {
         return inventoryService.getAllInventory();
     }
 
-    @GetMapping("/low-stock")
-    public List<Inventory> lowStock() {
-        return inventoryService.getLowStock();
-    }
+ 
 
     @PostMapping("/{productId}/add")
     public Map<String, Object> addStock(@PathVariable int productId, @RequestBody Map<String, Integer> body) {

@@ -1,10 +1,13 @@
+import React from "react";
+import { useEffect } from "react";
+
 export default function Home() {
-  return (
-    <div style={{ padding: 16 }}>
-      <h1>Welcome to Milk Tea Management System</h1>
-      <p>
-        This is the home page. Use the navigation links to manage orders, inventory, and staff.
-      </p>
-    </div>
-  );
+  useEffect(() => {
+    fetch("http://localhost:8080/products")
+      .then((res) => res.json())
+      .then((data) => console.log(data))
+      .catch((err) => console.error(err));
+  }, []);
+
+  return <div style={{ padding: 20 }}>Home Page</div>;
 }

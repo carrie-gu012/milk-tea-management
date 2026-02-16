@@ -28,8 +28,9 @@ public class OrderService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public int createOrder() {
-        return orderRepository.create();
+    public int createOrder(String createdBy) {
+    String who = (createdBy == null || createdBy.isBlank()) ? "UNKNOWN" : createdBy.trim();
+    return orderRepository.create(who);
     }
 
     public void addOrderItem(int orderId, int productId, int quantity) {
@@ -134,6 +135,27 @@ public class OrderService {
         // 6) 更新订单状态
         orderRepository.updateStatus(orderId, "COMPLETED");
     }
+
+
+    @Transactional
+    public void removeOrderItem(int orderId, int productId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found"));
+
+        if (!"CREATED".equals(order.getStatus())) {
+            throw new IllegalStateException("Order not editable unless status=CREATED");
+        }
+
+        int affected = jdbcTemplate.update(
+                "DELETE FROM order_item WHERE order_id = ? AND product_id = ?",
+                orderId, productId
+        );
+
+        if (affected == 0) {
+            throw new NoSuchElementException("Order item not found");
+        }
+    }
+
 
 
     public OrderDetailResponse getOrderDetail(int orderId) {

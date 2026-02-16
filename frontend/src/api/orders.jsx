@@ -1,8 +1,11 @@
 // src/api/orders.jsx
 import { api } from "./client.jsx";
 
-export function createOrder() {
-  return api("/orders", { method: "POST" });
+export async function createOrder(createdBy) {
+  return api("/orders", {
+    method: "POST",
+    body: JSON.stringify({ createdBy: createdBy || "UNKNOWN" }),
+  });
 }
 
 export function addOrderItem(orderId, { productId, quantity }) {
@@ -19,6 +22,13 @@ export function completeOrder(orderId) {
 export function getOrderDetail(orderId) {
   return api(`/orders/${orderId}`);
 }
+
+export async function removeOrderItem(orderId, productId) {
+  return await api(`/orders/${orderId}/items/${productId}`, {
+    method: "DELETE",
+  });
+}
+
 
 // status 可传 "CREATED"/"COMPLETED" 或者 null
 export function listOrders({ status = null, limit = 20, offset = 0 } = {}) {

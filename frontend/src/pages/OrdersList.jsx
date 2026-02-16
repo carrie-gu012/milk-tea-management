@@ -109,7 +109,9 @@ export default function OrdersList() {
               onClick={async () => {
                 try {
                   setCreating(true);
-                  const res = await createOrder(); // { orderId, status }
+                  const username =
+                    localStorage.getItem("username") || "UNKNOWN";
+                  const res = await createOrder(username); // { orderId, status }
                   nav(`/orders/${res.orderId}`);
                 } catch (e) {
                   setErr(e?.message ?? "Failed to create order");
@@ -194,6 +196,7 @@ export default function OrdersList() {
                   <th style={thStyle}>Order ID</th>
                   <th style={thStyle}>Status</th>
                   <th style={thStyle}>Created At</th>
+                  <th style={thStyle}>Created By</th>
                   <th style={thStyle} />
                 </tr>
               </thead>
@@ -211,6 +214,15 @@ export default function OrdersList() {
                         {o.createdAt ?? "—"}
                       </span>
                     </td>
+
+                    <td style={tdStyle}>
+                      {" "}
+                      {/* ✅ new */}
+                      <span style={{ color: "var(--muted)" }}>
+                        {o.createdBy ?? "—"}
+                      </span>
+                    </td>
+
                     <td style={{ ...tdStyle, textAlign: "right" }}>
                       <Link
                         to={`/orders/${o.orderId}`}

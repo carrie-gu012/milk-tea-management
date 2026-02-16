@@ -21,12 +21,14 @@ public class OrderRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public int create() {
-        String sql = "INSERT INTO orders (status) VALUES ('CREATED')";
+    // ✅ 改：create(createdBy)
+    public int create(String createdBy) {
+        String sql = "INSERT INTO orders (status, created_by) VALUES ('CREATED', ?)";
         KeyHolder kh = new GeneratedKeyHolder();
 
         jdbcTemplate.update(con -> {
             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, createdBy);
             return ps;
         }, kh);
 
@@ -37,21 +39,22 @@ public class OrderRepository {
 
     public Optional<Order> findById(int orderId) {
         String sql = """
-                SELECT order_id, created_at, status
+                SELECT order_id, created_at, status, created_by
                 FROM orders
                 WHERE order_id = ?
                 """;
         List<Order> rows = jdbcTemplate.query(sql, (rs, rowNum) -> new Order(
                 rs.getInt("order_id"),
                 rs.getTimestamp("created_at").toLocalDateTime(),
-                rs.getString("status")
+                rs.getString("status"),
+                rs.getString("created_by")
         ), orderId);
         return rows.stream().findFirst();
     }
 
     public Optional<Order> findByIdForUpdate(int orderId) {
         String sql = """
-                SELECT order_id, created_at, status
+                SELECT order_id, created_at, status, created_by
                 FROM orders
                 WHERE order_id = ?
                 FOR UPDATE
@@ -59,7 +62,8 @@ public class OrderRepository {
         List<Order> rows = jdbcTemplate.query(sql, (rs, rowNum) -> new Order(
                 rs.getInt("order_id"),
                 rs.getTimestamp("created_at").toLocalDateTime(),
-                rs.getString("status")
+                rs.getString("status"),
+                rs.getString("created_by")
         ), orderId);
         return rows.stream().findFirst();
     }
@@ -73,41 +77,39 @@ public class OrderRepository {
 
     public List<Order> findOrders(String status, Integer limit, Integer offset) {
 
-    StringBuilder sql = new StringBuilder("""
-            SELECT order_id, created_at, status
-            FROM orders
-            """);
+        StringBuilder sql = new StringBuilder("""
+                SELECT order_id, created_at, status, created_by
+                FROM orders
+                """);
 
-    List<Object> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
-    if (status != null) {
-        sql.append(" WHERE status = ? ");
-        params.add(status);
+        if (status != null) {
+            sql.append(" WHERE status = ? ");
+            params.add(status);
+        }
+
+        sql.append(" ORDER BY created_at DESC ");
+
+        if (limit != null) {
+            sql.append(" LIMIT ? ");
+            params.add(limit);
+        }
+
+        if (offset != null) {
+            sql.append(" OFFSET ? ");
+            params.add(offset);
+        }
+
+        return jdbcTemplate.query(
+                sql.toString(),
+                (rs, rowNum) -> new Order(
+                        rs.getInt("order_id"),
+                        rs.getTimestamp("created_at").toLocalDateTime(),
+                        rs.getString("status"),
+                        rs.getString("created_by")
+                ),
+                params.toArray()
+        );
     }
-
-    sql.append(" ORDER BY created_at DESC ");
-
-    if (limit != null) {
-        sql.append(" LIMIT ? ");
-        params.add(limit);
-    }
-
-    if (offset != null) {
-        sql.append(" OFFSET ? ");
-        params.add(offset);
-    }
-
-    return jdbcTemplate.query(
-            sql.toString(),
-            (rs, rowNum) -> new Order(
-                    rs.getInt("order_id"),
-                    rs.getTimestamp("created_at").toLocalDateTime(),
-                    rs.getString("status")
-            ),
-            params.toArray()
-    );
-    }
-
-
-    
 }

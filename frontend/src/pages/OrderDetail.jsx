@@ -2,7 +2,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProducts } from "../api/products.jsx";
-import { addOrderItem, completeOrder, getOrderDetail } from "../api/orders.jsx";
+import {
+  addOrderItem,
+  completeOrder,
+  getOrderDetail,
+  removeOrderItem,
+} from "../api/orders.jsx";
 
 function centsToDollars(cents) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -295,6 +300,7 @@ export default function OrderDetail() {
                   <th style={thStyle}>Qty</th>
                   <th style={thStyle}>Unit</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>Subtotal</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,6 +317,33 @@ export default function OrderDetail() {
                       }}
                     >
                       {centsToDollars(it.priceCents * it.quantity)}
+                    </td>
+
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <button
+                        className="btn"
+                        style={{
+                          padding: "8px 10px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(185,28,28,0.25)",
+                          color: "#b91c1c",
+                        }}
+                        disabled={isCompleted || actionLoading}
+                        onClick={async () => {
+                          try {
+                            setErr(null);
+                            setActionLoading(true);
+                            await removeOrderItem(detail.orderId, it.productId);
+                            await refresh();
+                          } catch (e) {
+                            setErr(e?.message ?? "Failed to delete item");
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

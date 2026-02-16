@@ -4,7 +4,7 @@
 START TRANSACTION;
 
 -- 1) 创建订单
-INSERT INTO orders (status) VALUES ('CREATED');
+INSERT INTO orders (status, created_by) VALUES ('CREATED', 'demo_user');
 SET @order_id = LAST_INSERT_ID();
 
 -- 2) 插入订单项（锁定价格）

@@ -7,6 +7,7 @@ public class OrderDetailResponse {
     private Integer orderId;
     private LocalDateTime createdAt;
     private String status;
+    private String createdBy;
     private List<Item> items;
 
     public OrderDetailResponse() {}
@@ -26,6 +27,9 @@ public class OrderDetailResponse {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 
     public List<Item> getItems() { return items; }
     public void setItems(List<Item> items) { this.items = items; }

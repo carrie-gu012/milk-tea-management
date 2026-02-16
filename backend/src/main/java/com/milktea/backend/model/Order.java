@@ -6,13 +6,17 @@ public class Order {
     private Integer orderId;
     private LocalDateTime createdAt;
     private String status;
+    private String createdBy;
 
     public Order() {}
 
-    public Order(Integer orderId, LocalDateTime createdAt, String status) {
+    public Order(Integer orderId, LocalDateTime createdAt, String status, String createdBy) {
         this.orderId = orderId;
         this.createdAt = createdAt;
         this.status = status;
+        this.createdBy = createdBy;
+
+        
     }
 
     public Integer getOrderId() { return orderId; }
@@ -23,4 +27,7 @@ public class Order {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 }

@@ -1,11 +1,11 @@
-import React from "react";
-import { useEffect } from "react";
+// src/pages/Home.jsx
+import React, { useEffect } from "react";
+import { api } from "../api/client.jsx";
 
 export default function Home() {
   useEffect(() => {
-    fetch("http://localhost:8080/products")
-      .then((res) => res.json())
-      .then((data) => console.log(data))
+    api("/products")
+      .then((data) => console.log("products:", data))
       .catch((err) => console.error(err));
   }, []);
 

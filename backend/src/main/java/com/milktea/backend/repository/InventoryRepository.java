@@ -16,16 +16,29 @@ public class InventoryRepository {
     }
 
     public List<Inventory> findAll() {
-        String sql = """
-                SELECT product_id, quantity, low_stock_threshold
-                FROM inventory
-                ORDER BY product_id
-                """;
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
-                rs.getInt("product_id"),
-                rs.getInt("quantity"),
-                rs.getInt("low_stock_threshold")
-        ));
+  String sql = """
+    SELECT i.ingredient_id, i.name, i.unit, inv.quantity
+    FROM inventory inv
+    JOIN ingredient i ON i.ingredient_id = inv.ingredient_id
+    ORDER BY i.ingredient_id
+  """;
+
+  return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
+    rs.getInt("ingredient_id"),
+    rs.getString("name"),
+    rs.getString("unit"),
+    rs.getDouble("quantity")
+  ));
+}
+
+    public int addStock(int ingredientId, double delta) {
+    String sql = "UPDATE inventory SET quantity = quantity + ? WHERE ingredient_id = ?";
+    return jdbcTemplate.update(sql, delta, ingredientId);
+    }
+
+    public int setQuantity(int ingredientId, double quantity) {
+    String sql = "UPDATE inventory SET quantity = ? WHERE ingredient_id = ?";
+    return jdbcTemplate.update(sql, quantity, ingredientId);
     }
 
     public int updateQuantity(int productId, int newQuantity) {
@@ -38,17 +51,5 @@ public class InventoryRepository {
         return jdbcTemplate.update(sql, delta, productId);
     }
 
-    public List<Inventory> findLowStock() {
-        String sql = """
-                SELECT product_id, quantity, low_stock_threshold
-                FROM inventory
-                WHERE quantity <= low_stock_threshold
-                ORDER BY quantity ASC
-                """;
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
-                rs.getInt("product_id"),
-                rs.getInt("quantity"),
-                rs.getInt("low_stock_threshold")
-        ));
-    }
+    
 }

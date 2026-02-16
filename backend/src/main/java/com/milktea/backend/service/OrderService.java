@@ -173,4 +173,8 @@ public class OrderService {
             this.totalUsed = totalUsed;
         }
     }
+
+    public List<Order> listOrders(String status, Integer limit, Integer offset) {
+    return orderRepository.findOrders(status, limit, offset);
+    }
 }

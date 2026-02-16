@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,4 +70,44 @@ public class OrderRepository {
                 status, orderId
         );
     }
+
+    public List<Order> findOrders(String status, Integer limit, Integer offset) {
+
+    StringBuilder sql = new StringBuilder("""
+            SELECT order_id, created_at, status
+            FROM orders
+            """);
+
+    List<Object> params = new ArrayList<>();
+
+    if (status != null) {
+        sql.append(" WHERE status = ? ");
+        params.add(status);
+    }
+
+    sql.append(" ORDER BY created_at DESC ");
+
+    if (limit != null) {
+        sql.append(" LIMIT ? ");
+        params.add(limit);
+    }
+
+    if (offset != null) {
+        sql.append(" OFFSET ? ");
+        params.add(offset);
+    }
+
+    return jdbcTemplate.query(
+            sql.toString(),
+            (rs, rowNum) -> new Order(
+                    rs.getInt("order_id"),
+                    rs.getTimestamp("created_at").toLocalDateTime(),
+                    rs.getString("status")
+            ),
+            params.toArray()
+    );
+    }
+
+
+    
 }

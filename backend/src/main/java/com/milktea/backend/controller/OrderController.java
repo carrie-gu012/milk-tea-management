@@ -1,11 +1,13 @@
 package com.milktea.backend.controller;
 
 import com.milktea.backend.service.OrderService;
-import com.milktea.backend.dto.OrderDetailResponse;   
+import com.milktea.backend.dto.OrderDetailResponse; 
+import com.milktea.backend.model.Order;  
 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 public class OrderController {
@@ -54,5 +56,14 @@ public class OrderController {
 
         public Integer getQuantity() { return quantity; }
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    }
+
+    @GetMapping("/orders")
+    public List<Order> listOrders(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer offset
+    ) {
+        return orderService.listOrders(status, limit, offset);
     }
 }

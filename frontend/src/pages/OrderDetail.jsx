@@ -7,6 +7,7 @@ import {
   completeOrder,
   getOrderDetail,
   removeOrderItem,
+  cancelOrder,
 } from "../api/orders.jsx";
 
 function centsToDollars(cents) {
@@ -28,11 +29,17 @@ function StatusBadge({ status }) {
             borderColor: "rgba(255,91,138,0.26)",
             color: "#9f1239",
           }
-        : {
-            background: "rgba(100,116,139,0.10)",
-            borderColor: "rgba(100,116,139,0.22)",
-            color: "var(--muted)",
-          };
+        : s === "CANCELED"
+          ? {
+              background: "rgba(156,163,175,0.18)",
+              borderColor: "rgba(107,114,128,0.30)",
+              color: "#374151",
+            }
+          : {
+              background: "rgba(100,116,139,0.10)",
+              borderColor: "rgba(100,116,139,0.22)",
+              color: "var(--muted)",
+            };
 
   return (
     <span
@@ -66,11 +73,31 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [err, setErr] = useState(null);
+  const [didCancel, setDidCancel] = useState(false);
 
   async function refresh() {
     const d = await getOrderDetail(orderId);
     setDetail(d);
+    setDidCancel(String(d?.status || "").toUpperCase() === "CANCELED");
   }
+
+
+  async function handleCancel() {
+    try {
+      setErr(null);
+      setActionLoading(true);
+      await cancelOrder(detail.orderId);
+
+      setDidCancel(true);
+
+      await refresh();
+    } catch (e) {
+      setErr(e?.message ?? "Failed to cancel order");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
 
   useEffect(() => {
     (async () => {
@@ -107,6 +134,7 @@ export default function OrderDetail() {
         Loading...
       </div>
     );
+
   if (err) {
     return (
       <div
@@ -122,6 +150,7 @@ export default function OrderDetail() {
       </div>
     );
   }
+
   if (!detail)
     return (
       <div className="card" style={{ padding: 18 }}>
@@ -130,6 +159,8 @@ export default function OrderDetail() {
     );
 
   const isCompleted = detail.status === "COMPLETED";
+  const isCanceled = detail.status === "CANCELED";
+  const isLocked = isCompleted || isCanceled;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -167,28 +198,42 @@ export default function OrderDetail() {
               Back to Orders
             </button>
 
-            <button
-              className="btn btn-primary"
-              disabled={isCompleted || actionLoading}
-              onClick={async () => {
-                try {
-                  setErr(null);
-                  setActionLoading(true);
-                  await completeOrder(detail.orderId);
-                  await refresh();
-                } catch (e) {
-                  setErr(e?.message ?? "Failed to complete order");
-                } finally {
-                  setActionLoading(false);
-                }
-              }}
-            >
-              {actionLoading
-                ? "Working..."
-                : isCompleted
-                  ? "Completed"
-                  : "Complete Order"}
-            </button>
+            {/* 只有 CREATED 才允许 Cancel / Complete */}
+            {detail.status === "CREATED" && (
+              <>
+                <button
+                  className="btn"
+                  disabled={actionLoading || didCancel}
+                  onClick={handleCancel}
+                  style={{
+                    border: "1px solid rgba(239,68,68,0.35)",
+                    background: "rgba(239,68,68,0.10)",
+                    color: "#7f1d1d",
+                  }}
+                >
+                  {actionLoading ? "Working..." : "Cancel Order"}
+                </button>
+
+                <button
+                  className="btn btn-primary"
+                  disabled={actionLoading}
+                  onClick={async () => {
+                    try {
+                      setErr(null);
+                      setActionLoading(true);
+                      await completeOrder(detail.orderId);
+                      await refresh();
+                    } catch (e) {
+                      setErr(e?.message ?? "Failed to complete order");
+                    } finally {
+                      setActionLoading(false);
+                    }
+                  }}
+                >
+                  {actionLoading ? "Working..." : "Complete Order"}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -227,7 +272,7 @@ export default function OrderDetail() {
           <select
             className="input"
             style={{ padding: "10px 12px", minWidth: 260 }}
-            disabled={isCompleted || actionLoading}
+            disabled={isLocked || actionLoading}
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
           >
@@ -241,7 +286,7 @@ export default function OrderDetail() {
           <input
             className="input"
             style={{ padding: "10px 12px", width: 120 }}
-            disabled={isCompleted || actionLoading}
+            disabled={isLocked || actionLoading}
             type="number"
             min={1}
             value={quantity}
@@ -250,9 +295,7 @@ export default function OrderDetail() {
 
           <button
             className="btn btn-primary"
-            disabled={
-              isCompleted || actionLoading || !productId || quantity < 1
-            }
+            disabled={isLocked || actionLoading || !productId || quantity < 1}
             onClick={async () => {
               try {
                 setErr(null);
@@ -272,9 +315,10 @@ export default function OrderDetail() {
             {actionLoading ? "Adding..." : "Add"}
           </button>
 
-          {isCompleted && (
+          {isLocked && (
             <span className="pill">
-              This order is completed. No more changes.
+              This order is {isCompleted ? "completed" : "canceled"}. No more
+              changes.
             </span>
           )}
         </div>
@@ -328,7 +372,7 @@ export default function OrderDetail() {
                           border: "1px solid rgba(185,28,28,0.25)",
                           color: "#b91c1c",
                         }}
-                        disabled={isCompleted || actionLoading}
+                        disabled={isLocked || actionLoading}
                         onClick={async () => {
                           try {
                             setErr(null);

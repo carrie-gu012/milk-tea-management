@@ -29,14 +29,14 @@ public class ProductController {
     // 2) GET /products/{id}  (返回 product + recipe)
     @GetMapping("/{id}")
     public ProductDetailDto detail(@PathVariable int id) {
-        // 你需要在 ProductService 里实现这个方法
+      
         return productService.getProductDetail(id);
     }
 
     // 3) POST /products (创建 product，并写入 recipe)
     @PostMapping
     public ResponseEntity<Map<String, Object>> create(@RequestBody CreateProductRequest req) {
-        // 你需要在 ProductService 里实现这个方法
+     
         int newId = productService.createProduct(req);
 
         return ResponseEntity.ok(Map.of(
@@ -48,7 +48,7 @@ public class ProductController {
     // 4) DELETE /products/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> delete(@PathVariable int id) {
-        // 你需要在 ProductService 里实现这个方法
+
         productService.deleteProduct(id);
 
         return ResponseEntity.ok(Map.of(

@@ -69,8 +69,8 @@ public class OrderService {
         if ("COMPLETED".equals(order.getStatus())) {
             throw new IllegalStateException("Order already completed");
         }
-        if ("CANCELLED".equals(order.getStatus())) {
-            throw new IllegalStateException("Cancelled order cannot be completed");
+        if ("CANCELED".equals(order.getStatus())) {
+            throw new IllegalStateException("Canceled order cannot be completed");
         }
         if (!"CREATED".equals(order.getStatus())) {
             throw new IllegalStateException("Only CREATED order can be completed");
@@ -155,6 +155,19 @@ public class OrderService {
             throw new NoSuchElementException("Order item not found");
         }
     }
+
+    public void cancelOrder(int orderId) {
+    String sql = """
+        UPDATE orders
+        SET status = 'CANCELED'
+        WHERE order_id = ? AND status = 'CREATED'
+        """;
+    int affected = jdbcTemplate.update(sql, orderId);
+    if (affected == 0) {
+        throw new IllegalStateException("Only CREATED order can be canceled");
+    }
+}
+
 
 
 

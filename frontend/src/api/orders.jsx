@@ -19,6 +19,10 @@ export function completeOrder(orderId) {
   return api(`/orders/${orderId}/complete`, { method: "POST" });
 }
 
+export function cancelOrder(orderId) {
+  return api(`/orders/${orderId}/cancel`, { method: "POST" });
+}
+
 export function getOrderDetail(orderId) {
   return api(`/orders/${orderId}`);
 }

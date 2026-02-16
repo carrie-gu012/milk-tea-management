@@ -59,6 +59,13 @@ public class OrderController {
         return Map.of("ok", true);
     }
 
+    @PostMapping("/orders/{orderId}/cancel")
+    public Map<String, Object> cancel(@PathVariable int orderId) {
+        orderService.cancelOrder(orderId);
+        return Map.of("orderId", orderId, "status", "CANCELLED");
+    }
+
+
 
     public static class AddItemRequest {
         private Integer productId;

@@ -27,14 +27,17 @@ export default function Navbar() {
           <NavLink className={linkCls} to="/products">
             Products
           </NavLink>
+          <NavLink className={linkCls} to="/recipes">
+            Recipes
+          </NavLink>
           <NavLink className={linkCls} to="/inventory">
             Inventory
           </NavLink>
           <NavLink className={linkCls} to="/analytics">
-            Data Analysis
+            Analytics
           </NavLink>
           <NavLink className={linkCls} to="/staff/register">
-            Register Staff
+            Staff
           </NavLink>
         </nav>
 

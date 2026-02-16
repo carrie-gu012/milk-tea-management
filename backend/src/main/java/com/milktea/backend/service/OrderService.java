@@ -3,6 +3,9 @@ package com.milktea.backend.service;
 import com.milktea.backend.model.Order;
 import com.milktea.backend.repository.OrderItemRepository;
 import com.milktea.backend.repository.OrderRepository;
+import com.milktea.backend.repository.OrderItemRepository.OrderItemView;
+import com.milktea.backend.dto.OrderDetailResponse;                     
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,6 +134,34 @@ public class OrderService {
         // 6) 更新订单状态
         orderRepository.updateStatus(orderId, "COMPLETED");
     }
+
+
+    public OrderDetailResponse getOrderDetail(int orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found"));
+
+        List<OrderItemView> items = orderItemRepository.findItemViewsByOrderId(orderId);
+
+        List<OrderDetailResponse.Item> itemResponses = new ArrayList<>();
+        for (OrderItemView item : items) {
+            itemResponses.add(new OrderDetailResponse.Item(
+                    item.getProductId(),
+                    item.getProductName(),
+                    item.getQuantity(),
+                    item.getPriceCents()
+            ));
+        }
+
+        return new OrderDetailResponse(
+                order.getOrderId(),
+                order.getCreatedAt(),
+                order.getStatus(),
+                itemResponses
+        );
+    }
+
+
+    
 
     // 原料用量结构
     private static class IngredientUsage {

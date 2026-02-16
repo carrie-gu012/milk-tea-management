@@ -1,7 +1,6 @@
 package com.milktea.backend.repository;
 
 import com.milktea.backend.dto.RecipeLine;
-import com.milktea.backend.dto.RecipeLine;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 

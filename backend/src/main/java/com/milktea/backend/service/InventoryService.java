@@ -18,10 +18,6 @@ public class InventoryService {
         return inventoryRepository.findAll();
     }
 
-    public List<Inventory> getLowStock() {
-        return inventoryRepository.findLowStock();
-    }
-
     public void addStock(int productId, int delta) {
         if (delta <= 0) throw new IllegalArgumentException("delta must be > 0");
         int updated = inventoryRepository.addStock(productId, delta);

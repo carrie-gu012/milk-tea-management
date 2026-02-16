@@ -6,6 +6,8 @@ export default function Navbar() {
   const { username, role, logout } = useAuth();
   const nav = useNavigate();
 
+  const linkCls = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
+
   return (
     <header className="nav">
       <div className="nav-inner">
@@ -15,45 +17,25 @@ export default function Navbar() {
           onClick={() => nav("/")}
         >
           <div className="logo" />
-          <div>Hikari · Milk Tea Admin</div>
+          <div>Hikari · Milk Tea</div>
         </div>
 
         <nav className="nav-links">
-          <NavLink
-            className={({ isActive }) =>
-              "nav-link" + (isActive ? " active" : "")
-            }
-            to="/"
-          >
-            Home
-          </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              "nav-link" + (isActive ? " active" : "")
-            }
-            to="/orders"
-          >
+          <NavLink className={linkCls} to="/orders">
             Orders
           </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              "nav-link" + (isActive ? " active" : "")
-            }
-            to="/inventory"
-          >
+          <NavLink className={linkCls} to="/products">
+            Products
+          </NavLink>
+          <NavLink className={linkCls} to="/inventory">
             Inventory
           </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              "nav-link" + (isActive ? " active" : "")
-            }
-            to="/low-stock"
-          >
-            Low Stock
+          <NavLink className={linkCls} to="/analytics">
+            Data Analysis
           </NavLink>
-
-          {/* staff 注册先不做：你想保留入口也行 */}
-          {/* <NavLink className={({isActive}) => "nav-link"+(isActive?" active":"")} to="/staff/register">Staff</NavLink> */}
+          <NavLink className={linkCls} to="/staff/register">
+            Register Staff
+          </NavLink>
         </nav>
 
         <div className="nav-right">

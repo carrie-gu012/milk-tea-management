@@ -112,4 +112,59 @@ public class OrderRepository {
                 params.toArray()
         );
     }
+
+    public List<Order> findOrders(String status, String from, String to, Integer limit, Integer offset) {
+
+    StringBuilder sql = new StringBuilder("""
+            SELECT order_id, created_at, status, created_by
+            FROM orders
+            WHERE 1=1
+            """);
+
+    List<Object> params = new ArrayList<>();
+
+    if (status != null && !status.isBlank()) {
+        sql.append(" AND status = ? ");
+        params.add(status);
+    }
+
+    // from/to: "YYYY-MM-DD"
+    if (from != null && !from.isBlank()) {
+        sql.append(" AND created_at >= CONCAT(?, ' 00:00:00') ");
+        params.add(from);
+    }
+
+    if (to != null && !to.isBlank()) {
+        sql.append(" AND created_at < DATE_ADD(CONCAT(?, ' 00:00:00'), INTERVAL 1 DAY) ");
+        params.add(to);
+    }
+
+    sql.append(" ORDER BY created_at DESC ");
+
+    if (limit != null) {
+        sql.append(" LIMIT ? ");
+        params.add(limit);
+    } else {
+        sql.append(" LIMIT 50 ");
+    }
+
+    if (offset != null) {
+        sql.append(" OFFSET ? ");
+        params.add(offset);
+    } else {
+        sql.append(" OFFSET 0 ");
+    }
+
+    return jdbcTemplate.query(
+            sql.toString(),
+            (rs, rowNum) -> new Order(
+                    rs.getInt("order_id"),
+                    rs.getTimestamp("created_at").toLocalDateTime(),
+                    rs.getString("status"),
+                    rs.getString("created_by")
+            ),
+            params.toArray()
+    );
+}
+
 }

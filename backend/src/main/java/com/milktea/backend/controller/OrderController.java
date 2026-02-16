@@ -62,7 +62,7 @@ public class OrderController {
     @PostMapping("/orders/{orderId}/cancel")
     public Map<String, Object> cancel(@PathVariable int orderId) {
         orderService.cancelOrder(orderId);
-        return Map.of("orderId", orderId, "status", "CANCELLED");
+        return Map.of("orderId", orderId, "status", "CANCELED");
     }
 
 
@@ -83,9 +83,12 @@ public class OrderController {
     @GetMapping("/orders")
     public List<Order> listOrders(
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String from,   // "2026-02-01"
+            @RequestParam(required = false) String to,     // "2026-02-16"
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset
     ) {
-        return orderService.listOrders(status, limit, offset);
+        return orderService.listOrders(status, from, to, limit, offset);
     }
+
 }

@@ -4,13 +4,65 @@ import {
   getInventory,
   setInventoryQuantity,
 } from "../api/inventory.jsx";
+import {
+  createIngredient,
+  updateIngredient,
+  deleteIngredient,
+} from "../api/ingredients.jsx";
 
-const LOW_STOCK = 10;
+const LOW_STOCK = 500;
+const PAGE_SIZE = 30;
 
 function getErrMsg(e) {
   if (!e) return "Unknown error";
   if (typeof e === "string") return e;
   return e.message || "Request failed";
+}
+
+function Modal({ open, title, children, onClose }) {
+  if (!open) return null;
+  return (
+    <div
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(2,6,23,0.45)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 50,
+        padding: 16,
+      }}
+    >
+      <div
+        className="card"
+        style={{
+          width: "min(520px, 100%)",
+          borderRadius: "var(--radius)",
+        }}
+      >
+        <div
+          className="card-pad"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontWeight: 900, fontSize: 16 }}>{title}</div>
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="card-pad" style={{ paddingTop: 0 }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Inventory() {
@@ -23,6 +75,21 @@ export default function Inventory() {
 
   const [deltaDraft, setDeltaDraft] = useState({});
   const [qtyDraft, setQtyDraft] = useState({});
+
+  // ✅ 分页状态
+  const [page, setPage] = useState(1);
+
+  // ✅ 弹窗状态：Add / Edit / Delete
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [delOpen, setDelOpen] = useState(false);
+
+  const [selected, setSelected] = useState(null); // 当前选中的 ingredient (来自 inventory row)
+
+  // ✅ 表单状态
+  const [formName, setFormName] = useState("");
+  const [formUnit, setFormUnit] = useState("");
+  const [formInitialQty, setFormInitialQty] = useState("0"); // add 时用（整数）
 
   async function load() {
     setLoading(true);
@@ -47,7 +114,9 @@ export default function Inventory() {
 
     if (qq) {
       arr = arr.filter((x) =>
-        String(x.ingredientName || "").toLowerCase().includes(qq),
+        String(x.ingredientName || "")
+          .toLowerCase()
+          .includes(qq),
       );
     }
 
@@ -62,6 +131,19 @@ export default function Inventory() {
 
     return arr;
   }, [items, q, sort]);
+
+  // ✅ 搜索/排序变化时，回到第一页（否则会出现空页）
+  useEffect(() => {
+    setPage(1);
+  }, [q, sort]);
+
+  // ✅ 分页计算
+  const totalPages = Math.max(1, Math.ceil(view.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const paged = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return view.slice(start, start + PAGE_SIZE);
+  }, [view, safePage]);
 
   function statusOf(qty) {
     if (qty <= 0) return { text: "Out of stock", tone: "danger" };
@@ -94,7 +176,7 @@ export default function Inventory() {
     };
   }
 
-  async function onAdd(id) {
+  async function onAddStock(id) {
     setErr("");
     const raw = deltaDraft[id];
     const delta = Number(raw);
@@ -113,7 +195,7 @@ export default function Inventory() {
     }
   }
 
-  async function onSet(id) {
+  async function onSetQty(id) {
     setErr("");
     const raw = qtyDraft[id];
     const quantity = Number(raw);
@@ -132,8 +214,107 @@ export default function Inventory() {
     }
   }
 
+  // =============== Ingredient CRUD: 弹窗逻辑 ===============
+
+  function openAdd() {
+    setErr("");
+    setFormName("");
+    setFormUnit("");
+    setFormInitialQty("0");
+    setAddOpen(true);
+  }
+
+  function openEdit(row) {
+    setErr("");
+    setSelected(row);
+    setFormName(row.ingredientName || "");
+    setFormUnit(row.unit || "");
+    setEditOpen(true);
+  }
+
+  function openDelete(row) {
+    setErr("");
+    setSelected(row);
+    setDelOpen(true);
+  }
+
+  async function submitAddIngredient() {
+    setErr("");
+    const name = formName.trim();
+    const unit = formUnit.trim();
+    const initialQuantity = Number(formInitialQty);
+
+    if (!name) {
+      setErr("Ingredient name is required");
+      return;
+    }
+    if (!unit) {
+      setErr("Unit is required (e.g., g, ml)");
+      return;
+    }
+    if (!Number.isInteger(initialQuantity) || initialQuantity < 0) {
+      setErr("Initial quantity must be an integer >= 0");
+      return;
+    }
+
+    try {
+      await createIngredient({ ingredientName: name, unit, initialQuantity });
+      setAddOpen(false);
+      await load();
+    } catch (e) {
+      setErr(getErrMsg(e));
+    }
+  }
+
+  async function submitEditIngredient() {
+    setErr("");
+    if (!selected) return;
+
+    const name = formName.trim();
+    const unit = formUnit.trim();
+
+    if (!name) {
+      setErr("Ingredient name is required");
+      return;
+    }
+    if (!unit) {
+      setErr("Unit is required");
+      return;
+    }
+
+    try {
+      await updateIngredient(selected.ingredientId, {
+        ingredientName: name,
+        unit,
+      });
+      setEditOpen(false);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      setErr(getErrMsg(e));
+    }
+  }
+
+  async function submitDeleteIngredient() {
+    setErr("");
+    if (!selected) return;
+
+    try {
+      await deleteIngredient(selected.ingredientId);
+      setDelOpen(false);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      setErr(
+        getErrMsg(e) ||
+          "Delete failed. This ingredient may be referenced by recipes.",
+      );
+    }
+  }
+
   return (
     <div className="container">
+      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -152,11 +333,17 @@ export default function Inventory() {
           </p>
         </div>
 
-        <button className="btn" onClick={load} disabled={loading}>
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="btn btn-primary" onClick={openAdd}>
+            + Add Ingredient
+          </button>
+          <button className="btn" onClick={load} disabled={loading}>
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
+      {/* Controls */}
       <div className="card card-pad" style={{ marginTop: 14 }}>
         <div
           style={{
@@ -194,11 +381,13 @@ export default function Inventory() {
           </div>
 
           <span className="pill">Low stock ≤ {LOW_STOCK}</span>
+          <span className="pill">Page size: {PAGE_SIZE}</span>
         </div>
 
         {err ? <div className="err">{err}</div> : null}
       </div>
 
+      {/* Table Card */}
       <div className="card" style={{ marginTop: 14 }}>
         <div
           className="card-pad"
@@ -215,6 +404,11 @@ export default function Inventory() {
               ({view.length})
             </span>
           </div>
+
+          {/* ✅ 分页信息 */}
+          <span className="pill">
+            Page {safePage} / {totalPages}
+          </span>
         </div>
 
         <div style={{ overflowX: "auto" }}>
@@ -237,14 +431,14 @@ export default function Inventory() {
                     Loading inventory...
                   </td>
                 </tr>
-              ) : view.length === 0 ? (
+              ) : paged.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={tdMuted}>
                     No inventory items found.
                   </td>
                 </tr>
               ) : (
-                view.map((x) => {
+                paged.map((x) => {
                   const id = x.ingredientId;
                   const qty = Number(x.quantity ?? 0);
                   const st = statusOf(qty);
@@ -266,10 +460,12 @@ export default function Inventory() {
                           style={{
                             display: "flex",
                             justifyContent: "flex-end",
-                            gap: 12,
+                            gap: 10,
                             flexWrap: "wrap",
+                            alignItems: "center",
                           }}
                         >
+                          {/* 库存操作 */}
                           <div style={{ display: "flex", gap: 8 }}>
                             <input
                               className="input"
@@ -285,7 +481,7 @@ export default function Inventory() {
                             />
                             <button
                               className="btn btn-primary"
-                              onClick={() => onAdd(id)}
+                              onClick={() => onAddStock(id)}
                             >
                               Add
                             </button>
@@ -306,11 +502,19 @@ export default function Inventory() {
                             />
                             <button
                               className="btn btn-primary"
-                              onClick={() => onSet(id)}
+                              onClick={() => onSetQty(id)}
                             >
                               Set
                             </button>
                           </div>
+
+                          {/* Ingredient 管理 */}
+                          <button className="btn" onClick={() => openEdit(x)}>
+                            Edit
+                          </button>
+                          <button className="btn" onClick={() => openDelete(x)}>
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -320,7 +524,156 @@ export default function Inventory() {
             </tbody>
           </table>
         </div>
+
+        {/* ✅ 分页控件 */}
+        <div
+          className="card-pad"
+          style={{
+            paddingTop: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span className="pill">
+            Showing {(safePage - 1) * PAGE_SIZE + 1}-
+            {Math.min(safePage * PAGE_SIZE, view.length)} of {view.length}
+          </span>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              className="btn"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <button
+              className="btn"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* ============ Add Modal ============ */}
+      <Modal
+        open={addOpen}
+        title="Add Ingredient"
+        onClose={() => setAddOpen(false)}
+      >
+        <div className="field">
+          <div className="label">Ingredient Name</div>
+          <input
+            className="input"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder="e.g., Pearl, Milk, Black Tea"
+          />
+        </div>
+
+        <div className="field">
+          <div className="label">Unit</div>
+          <input
+            className="input"
+            value={formUnit}
+            onChange={(e) => setFormUnit(e.target.value)}
+            placeholder="e.g., g, ml"
+          />
+        </div>
+
+        <div className="field">
+          <div className="label">Initial Quantity</div>
+          <input
+            className="input"
+            value={formInitialQty}
+            onChange={(e) => setFormInitialQty(e.target.value)}
+            placeholder="0"
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button className="btn" onClick={() => setAddOpen(false)}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={submitAddIngredient}>
+            Create
+          </button>
+        </div>
+      </Modal>
+
+      {/* ============ Edit Modal ============ */}
+      <Modal
+        open={editOpen}
+        title="Edit Ingredient"
+        onClose={() => setEditOpen(false)}
+      >
+        <div className="field">
+          <div className="label">Ingredient Name</div>
+          <input
+            className="input"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <div className="label">Unit</div>
+          <input
+            className="input"
+            value={formUnit}
+            onChange={(e) => setFormUnit(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <span className="pill">
+            Quantity is managed via “Set qty” in the table.
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button className="btn" onClick={() => setEditOpen(false)}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={submitEditIngredient}>
+            Save
+          </button>
+        </div>
+      </Modal>
+
+      {/* ============ Delete Confirm Modal ============ */}
+      <Modal
+        open={delOpen}
+        title="Delete Ingredient"
+        onClose={() => setDelOpen(false)}
+      >
+        <div style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+          Are you sure you want to delete{" "}
+          <b style={{ color: "var(--text)" }}>
+            {selected?.ingredientName || "this ingredient"}
+          </b>
+          ?
+          <div style={{ marginTop: 10 }}>
+            <span className="pill" style={pillStyle("warn")}>
+              If this ingredient is used by recipes, delete may fail.
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button className="btn" onClick={() => setDelOpen(false)}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={submitDeleteIngredient}>
+            Delete
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

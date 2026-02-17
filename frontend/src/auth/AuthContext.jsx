@@ -6,7 +6,7 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { api } from "../api/client.jsx"; // ✅ 用你现成的 fetch 封装
+import { api } from "../api/client.jsx";
 
 const AuthContext = createContext(null);
 
@@ -27,23 +27,29 @@ export function AuthProvider({ children }) {
       username,
       isReady,
 
-      // ✅ 真实登录
+      // ✅ 真实登录：调用后端
       login: async (u, p) => {
-        // ✅ 写死的管理员账号
-        if (u === "admin" && p === "123456") {
-          const fakeToken = "admin-token";
-          const fakeRole = "ADMIN";
+        const data = await api("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ username: u, password: p }),
+        });
 
-          setToken(fakeToken);
-          setRole(fakeRole);
-          setUsername(u);
+        // 期望后端返回：{ role: "ADMIN"|"STAFF", username: "xxx", token?: "..." }
+        const nextRole = data?.role;
+        const nextUsername = data?.username || u;
+        const nextToken = data?.token || "session"; // 没 token 也没关系，先占位
 
-          localStorage.setItem("token", fakeToken);
-          localStorage.setItem("role", fakeRole);
-          localStorage.setItem("username", u);
-        } else {
-          throw new Error("Invalid username or password.");
+        if (!nextRole) {
+          throw new Error("Login failed: missing role from server.");
         }
+
+        setToken(nextToken);
+        setRole(nextRole);
+        setUsername(nextUsername);
+
+        localStorage.setItem("token", nextToken);
+        localStorage.setItem("role", nextRole);
+        localStorage.setItem("username", nextUsername);
       },
 
       logout: () => {

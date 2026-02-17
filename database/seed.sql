@@ -4,7 +4,7 @@
 
 -- Admin (default)
 INSERT INTO admin (username, password_hash)
-VALUES ('admin', 'admin123');
+VALUES ('admin', '123456');
 
 -- Staff (created by admin)
 INSERT INTO staff (username, password_hash, created_by_admin_id)

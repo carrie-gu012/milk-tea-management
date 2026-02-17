@@ -18,15 +18,15 @@ public class InventoryService {
         return inventoryRepository.findAll();
     }
 
-    public void addStock(int productId, int delta) {
-        if (delta <= 0) throw new IllegalArgumentException("delta must be > 0");
-        int updated = inventoryRepository.addStock(productId, delta);
-        if (updated == 0) throw new IllegalArgumentException("product not found in inventory");
+    public void addStock(int ingredientId, double delta) {
+    if (delta <= 0) throw new IllegalArgumentException("delta must be > 0");
+    int updated = inventoryRepository.addStock(ingredientId, delta);
+    if (updated == 0) throw new IllegalArgumentException("ingredient not found in inventory");
     }
 
-    public void setQuantity(int productId, int quantity) {
+    public void setQuantity(int ingredientId, double quantity) {
         if (quantity < 0) throw new IllegalArgumentException("quantity must be >= 0");
-        int updated = inventoryRepository.updateQuantity(productId, quantity);
-        if (updated == 0) throw new IllegalArgumentException("product not found in inventory");
+        int updated = inventoryRepository.setQuantity(ingredientId, quantity);
+        if (updated == 0) throw new IllegalArgumentException("ingredient not found in inventory");
     }
 }

@@ -8,7 +8,6 @@ import java.util.List;
 
 @Repository
 public class InventoryRepository {
-
     private final JdbcTemplate jdbcTemplate;
 
     public InventoryRepository(JdbcTemplate jdbcTemplate) {
@@ -16,40 +15,38 @@ public class InventoryRepository {
     }
 
     public List<Inventory> findAll() {
-  String sql = """
-    SELECT i.ingredient_id, i.name, i.unit, inv.quantity
-    FROM inventory inv
-    JOIN ingredient i ON i.ingredient_id = inv.ingredient_id
-    ORDER BY i.ingredient_id
-  """;
+        String sql = """
+            SELECT i.ingredient_id, i.name, i.unit, inv.quantity
+            FROM inventory inv
+            JOIN ingredient i ON i.ingredient_id = inv.ingredient_id
+            ORDER BY i.ingredient_id
+        """;
 
-  return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
-    rs.getInt("ingredient_id"),
-    rs.getString("name"),
-    rs.getString("unit"),
-    rs.getDouble("quantity")
-  ));
-}
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
+            rs.getInt("ingredient_id"),
+            rs.getString("name"),
+            rs.getString("unit"),
+            rs.getDouble("quantity")
+        ));
+    }
 
     public int addStock(int ingredientId, double delta) {
-    String sql = "UPDATE inventory SET quantity = quantity + ? WHERE ingredient_id = ?";
-    return jdbcTemplate.update(sql, delta, ingredientId);
+        String sql = "UPDATE inventory SET quantity = quantity + ? WHERE ingredient_id = ?";
+        return jdbcTemplate.update(sql, delta, ingredientId);
     }
 
     public int setQuantity(int ingredientId, double quantity) {
-    String sql = "UPDATE inventory SET quantity = ? WHERE ingredient_id = ?";
-    return jdbcTemplate.update(sql, quantity, ingredientId);
+        String sql = "UPDATE inventory SET quantity = ? WHERE ingredient_id = ?";
+        return jdbcTemplate.update(sql, quantity, ingredientId);
     }
 
-    public int addStock(int ingredientId, int delta) {
-    String sql = "UPDATE inventory SET quantity = quantity + ? WHERE ingredient_id = ?";
-    return jdbcTemplate.update(sql, delta, ingredientId);
-  } 
+    public int insertInventoryRow(int ingredientId, double quantity) {
+        String sql = "INSERT INTO inventory (ingredient_id, quantity) VALUES (?, ?)";
+        return jdbcTemplate.update(sql, ingredientId, quantity);
+    }
 
-  public int updateQuantity(int ingredientId, int quantity) {
-      String sql = "UPDATE inventory SET quantity = ? WHERE ingredient_id = ?";
-      return jdbcTemplate.update(sql, quantity, ingredientId);
-  }
-
-    
+    public int deleteInventoryRow(int ingredientId) {
+        String sql = "DELETE FROM inventory WHERE ingredient_id = ?";
+        return jdbcTemplate.update(sql, ingredientId);
+    }
 }

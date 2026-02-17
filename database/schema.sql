@@ -1,7 +1,9 @@
 -- database/schema.sql  (MySQL 8)
--- 建议先创建一个数据库：
+
 -- CREATE DATABASE milk_tea_db;
 -- USE milk_tea_db;
+
+-- database/schema.sql  (MySQL 8)
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -11,8 +13,31 @@ DROP TABLE IF EXISTS recipe;
 DROP TABLE IF EXISTS inventory;
 DROP TABLE IF EXISTS ingredient;
 DROP TABLE IF EXISTS product;
+DROP TABLE IF EXISTS staff;
+DROP TABLE IF EXISTS admin;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+CREATE TABLE admin (
+  admin_id       INT AUTO_INCREMENT PRIMARY KEY,
+  username       VARCHAR(50) NOT NULL UNIQUE,
+  password_hash  VARCHAR(255) NOT NULL,
+  is_active      TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB;
+
+CREATE TABLE staff (
+  staff_id       INT AUTO_INCREMENT PRIMARY KEY,
+  username       VARCHAR(50) NOT NULL UNIQUE,
+  password_hash  VARCHAR(255) NOT NULL,
+  is_active      TINYINT(1) NOT NULL DEFAULT 1,
+
+  created_by_admin_id INT NOT NULL,
+
+  CONSTRAINT fk_staff_created_by_admin
+    FOREIGN KEY (created_by_admin_id) REFERENCES admin(admin_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB;
 
 CREATE TABLE product (
   product_id   INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,7 +53,6 @@ CREATE TABLE ingredient (
   unit          VARCHAR(20) NOT NULL
 ) ENGINE=InnoDB;
 
--- 每种原料一条库存记录（最简）
 CREATE TABLE inventory (
   ingredient_id INT PRIMARY KEY,
   quantity      DECIMAL(12,2) NOT NULL,
@@ -38,7 +62,6 @@ CREATE TABLE inventory (
     ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 配方：某产品需要哪些原料、每杯用多少
 CREATE TABLE recipe (
   product_id     INT NOT NULL,
   ingredient_id  INT NOT NULL,
@@ -57,10 +80,9 @@ CREATE TABLE orders (
   order_id     INT AUTO_INCREMENT PRIMARY KEY,
   created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status       ENUM('CREATED','COMPLETED','CANCELED') NOT NULL DEFAULT 'CREATED',
-  created_by   VARCHAR(100) NOT NULL DEFAULT 'UNKNOWN'
+  created_by   VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB;
 
--- OrderItem：每个订单里每个商品一行
 CREATE TABLE order_item (
   order_id     INT NOT NULL,
   product_id   INT NOT NULL,

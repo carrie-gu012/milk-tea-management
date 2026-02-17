@@ -78,7 +78,7 @@ export default function Home() {
 
           <button
             className="btn btn-primary"
-            onClick={() => nav("/orders/new")}
+            onClick={() => nav("/orders/")}
           >
             + New Order
           </button>

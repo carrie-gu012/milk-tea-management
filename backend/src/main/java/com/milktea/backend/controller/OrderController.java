@@ -18,7 +18,7 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // ✅ POST /orders
+    //  POST /orders
     @PostMapping("/orders")
     public Map<String, Object> createOrder(@RequestBody CreateOrderRequest req) {
         int id = orderService.createOrder(req.getCreatedBy());
@@ -32,27 +32,27 @@ public class OrderController {
         public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
     }
 
-    // ✅ POST /orders/{id}/items
+    //  POST /orders/{id}/items
     @PostMapping("/orders/{orderId}/items")
     public Map<String, Object> addItem(@PathVariable int orderId, @RequestBody AddItemRequest req) {
         orderService.addOrderItem(orderId, req.getProductId(), req.getQuantity());
         return Map.of("ok", true);
     }
 
-    // ✅ POST /orders/{id}/complete
+    // POST /orders/{id}/complete
     @PostMapping("/orders/{orderId}/complete")
     public Map<String, Object> complete(@PathVariable int orderId) {
         orderService.completeOrder(orderId);
         return Map.of("orderId", orderId, "status", "COMPLETED");
     }
 
-    // ✅ 新增：GET /orders/{id}
+    // GET /orders/{id}
     @GetMapping("/orders/{orderId}")
     public OrderDetailResponse getOrder(@PathVariable int orderId) {
         return orderService.getOrderDetail(orderId);
     }
 
-    // ✅ DELETE /orders/{orderId}/items/{productId}
+    //  DELETE /orders/{orderId}/items/{productId}
     @DeleteMapping("/orders/{orderId}/items/{productId}")
     public Map<String, Object> removeItem(@PathVariable int orderId, @PathVariable int productId) {
         orderService.removeOrderItem(orderId, productId);

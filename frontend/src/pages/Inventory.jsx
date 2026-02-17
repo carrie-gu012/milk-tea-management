@@ -76,20 +76,20 @@ export default function Inventory() {
   const [deltaDraft, setDeltaDraft] = useState({});
   const [qtyDraft, setQtyDraft] = useState({});
 
-  // ✅ 分页状态
+
   const [page, setPage] = useState(1);
 
-  // ✅ 弹窗状态：Add / Edit / Delete
+
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
 
-  const [selected, setSelected] = useState(null); // 当前选中的 ingredient (来自 inventory row)
+  const [selected, setSelected] = useState(null); 
 
-  // ✅ 表单状态
+
   const [formName, setFormName] = useState("");
   const [formUnit, setFormUnit] = useState("");
-  const [formInitialQty, setFormInitialQty] = useState("0"); // add 时用（整数）
+  const [formInitialQty, setFormInitialQty] = useState("0"); 
 
   async function load() {
     setLoading(true);
@@ -132,12 +132,12 @@ export default function Inventory() {
     return arr;
   }, [items, q, sort]);
 
-  // ✅ 搜索/排序变化时，回到第一页（否则会出现空页）
+
   useEffect(() => {
     setPage(1);
   }, [q, sort]);
 
-  // ✅ 分页计算
+
   const totalPages = Math.max(1, Math.ceil(view.length / PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const paged = useMemo(() => {
@@ -214,7 +214,7 @@ export default function Inventory() {
     }
   }
 
-  // =============== Ingredient CRUD: 弹窗逻辑 ===============
+
 
   function openAdd() {
     setErr("");
@@ -405,7 +405,7 @@ export default function Inventory() {
             </span>
           </div>
 
-          {/* ✅ 分页信息 */}
+
           <span className="pill">
             Page {safePage} / {totalPages}
           </span>
@@ -508,7 +508,7 @@ export default function Inventory() {
                             </button>
                           </div>
 
-                          {/* Ingredient 管理 */}
+
                           <button className="btn" onClick={() => openEdit(x)}>
                             Edit
                           </button>
@@ -525,7 +525,7 @@ export default function Inventory() {
           </table>
         </div>
 
-        {/* ✅ 分页控件 */}
+
         <div
           className="card-pad"
           style={{

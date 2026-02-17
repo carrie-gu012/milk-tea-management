@@ -23,7 +23,7 @@ export default function Login() {
 
       await login(username.trim(), password);
 
-      // ✅ 登录成功直接进入主页
+  
       nav("/", { replace: true });
     } catch (e2) {
       setErr(e2?.message ?? "Login failed");

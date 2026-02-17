@@ -41,15 +41,15 @@ public class InventoryRepository {
     return jdbcTemplate.update(sql, quantity, ingredientId);
     }
 
-    public int updateQuantity(int productId, int newQuantity) {
-        String sql = "UPDATE inventory SET quantity = ? WHERE product_id = ?";
-        return jdbcTemplate.update(sql, newQuantity, productId);
-    }
+    public int addStock(int ingredientId, int delta) {
+    String sql = "UPDATE inventory SET quantity = quantity + ? WHERE ingredient_id = ?";
+    return jdbcTemplate.update(sql, delta, ingredientId);
+  } 
 
-    public int addStock(int productId, int delta) {
-        String sql = "UPDATE inventory SET quantity = quantity + ? WHERE product_id = ?";
-        return jdbcTemplate.update(sql, delta, productId);
-    }
+  public int updateQuantity(int ingredientId, int quantity) {
+      String sql = "UPDATE inventory SET quantity = ? WHERE ingredient_id = ?";
+      return jdbcTemplate.update(sql, quantity, ingredientId);
+  }
 
     
 }

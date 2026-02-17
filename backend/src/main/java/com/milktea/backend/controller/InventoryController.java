@@ -24,17 +24,18 @@ public class InventoryController {
 
  
 
-    @PostMapping("/{productId}/add")
-    public Map<String, Object> addStock(@PathVariable int productId, @RequestBody Map<String, Integer> body) {
+    @PostMapping("/{ingredientId}/add")
+    public Map<String, Object> addStock(@PathVariable int ingredientId, @RequestBody Map<String, Integer> body) {
         int delta = body.getOrDefault("delta", 0);
-        inventoryService.addStock(productId, delta);
+        inventoryService.addStock(ingredientId, delta);
         return Map.of("ok", true);
     }
 
-    @PutMapping("/{productId}")
-    public Map<String, Object> setQuantity(@PathVariable int productId, @RequestBody Map<String, Integer> body) {
+    @PutMapping("/{ingredientId}")
+    public Map<String, Object> setQuantity(@PathVariable int ingredientId, @RequestBody Map<String, Integer> body) {
         int quantity = body.getOrDefault("quantity", -1);
-        inventoryService.setQuantity(productId, quantity);
+        inventoryService.setQuantity(ingredientId, quantity);
         return Map.of("ok", true);
     }
+
 }

@@ -30,20 +30,24 @@ INSERT INTO product (name, price_cents) VALUES
 -- =========================
 -- Ingredients
 -- =========================
-INSERT INTO ingredient (name, unit) VALUES
-('Pearl', 'g'),
-('Milk', 'ml'),
-('Tea Base', 'ml'),
-('Mango Syrup', 'ml'),
-('Strawberry Syrup', 'ml'),
-('Brown Sugar Syrup', 'ml'),
-('Cheese Foam', 'ml'),
-('Jasmine Tea', 'ml'),
-('Lemon Juice', 'ml'),
-('Peach Syrup', 'ml'),
-('Taro Paste', 'g'),
-('Matcha Powder', 'g'),
-('Sugar Syrup', 'ml');
+INSERT INTO ingredient (name, unit, type) VALUES
+('Pearl', 'g', 'TOPPING'),
+
+('Milk', 'ml', 'DAIRY'),
+('Cheese Foam', 'ml', 'DAIRY'),
+
+('Tea Base', 'ml', 'TEA_BASE'),
+('Jasmine Tea', 'ml', 'TEA_BASE'),
+
+('Mango Syrup', 'ml', 'SYRUP'),
+('Strawberry Syrup', 'ml', 'SYRUP'),
+('Brown Sugar Syrup', 'ml', 'SYRUP'),
+('Peach Syrup', 'ml', 'SYRUP'),
+('Sugar Syrup', 'ml', 'SYRUP'),
+('Lemon Juice', 'ml', 'SYRUP'),
+
+('Taro Paste', 'g', 'CONCENTRATE'),
+('Matcha Powder', 'g', 'CONCENTRATE');
 
 -- =========================
 -- Inventory (starting stock)

@@ -15,15 +15,19 @@ public class RecipeRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // ⭐ 查询某 product 的 recipe
+    // ⭐ 查询某 product 的 recipe（带 ingredient.type，方便前端按类型分组显示）
     public List<RecipeLine> findRecipeByProductId(int productId) {
 
         String sql = """
-            SELECT r.ingredient_id, i.name, i.unit, r.qty_required
+            SELECT r.ingredient_id,
+                   i.name,
+                   i.unit,
+                   i.type,
+                   r.qty_required
             FROM recipe r
             JOIN ingredient i ON i.ingredient_id = r.ingredient_id
             WHERE r.product_id = ?
-            ORDER BY i.name
+            ORDER BY i.type, i.name
         """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
@@ -31,29 +35,26 @@ public class RecipeRepository {
             line.setIngredientId(rs.getInt("ingredient_id"));
             line.setIngredientName(rs.getString("name"));
             line.setUnit(rs.getString("unit"));
+            line.setType(rs.getString("type")); 
             line.setQtyRequired(rs.getDouble("qty_required"));
             return line;
         }, productId);
     }
 
     // ⭐ 批量替换 recipe（create or update 都可以用）
+    // 这里不需要传 type：recipe 表只存 ingredient_id + qty_required，
+    // type 永远从 ingredient 表 join 出来。
     public void replaceRecipe(int productId, List<RecipeLine> lines) {
 
-        // 删除旧 recipe
-        jdbcTemplate.update(
-                "DELETE FROM recipe WHERE product_id = ?",
-                productId
-        );
+        jdbcTemplate.update("DELETE FROM recipe WHERE product_id = ?", productId);
 
-        // 插入新 recipe
         String sql = """
             INSERT INTO recipe(product_id, ingredient_id, qty_required)
             VALUES (?, ?, ?)
         """;
 
         for (RecipeLine line : lines) {
-            jdbcTemplate.update(
-                    sql,
+            jdbcTemplate.update(sql,
                     productId,
                     line.getIngredientId(),
                     line.getQtyRequired()

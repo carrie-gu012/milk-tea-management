@@ -50,7 +50,15 @@ CREATE TABLE product (
 CREATE TABLE ingredient (
   ingredient_id INT AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(100) NOT NULL UNIQUE,
-  unit          VARCHAR(20) NOT NULL
+  unit          VARCHAR(20) NOT NULL,
+
+  type ENUM(
+    'TOPPING',
+    'DAIRY',
+    'TEA_BASE',
+    'SYRUP',
+    'CONCENTRATE'
+  ) NOT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE inventory (

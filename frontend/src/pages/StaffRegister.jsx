@@ -58,7 +58,7 @@ const styles = {
     padding: "0 14px",
     borderRadius: 999,
     border: "1px solid rgba(15, 23, 42, 0.14)",
-    background: "rgba(255, 91, 138, 0.10)", // 你顶部那个粉色选中 느낌
+    background: "rgba(255, 91, 138, 0.10)", 
     color: "#9f1239",
     cursor: "pointer",
     fontWeight: 700,

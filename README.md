@@ -29,10 +29,11 @@ The business logic follows this structure:
 
 ## ADMIN
 
+-   Manage orders
 -   Manage inventory
 -   Manage recipes
 -   Manage products
--   Register staff
+-   Manage staff
 -   View analytics
 
 ## STAFF

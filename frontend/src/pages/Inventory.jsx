@@ -155,7 +155,7 @@ export default function Inventory() {
 
   function statusOf(qty, type) {
     const low = lowThresholdOf(type);
-    if (qty <= 0) return { text: "Out of stock", tone: "danger" };
+    if (qty <= 0) return { text: "None", tone: "danger" };
     if (qty <= low) return { text: `Low`, tone: "warn" };
     return { text: "OK", tone: "ok" };
   }

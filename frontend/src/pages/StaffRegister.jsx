@@ -177,7 +177,152 @@ const styles = {
     alignItems: "center",
     flexWrap: "wrap",
   },
+
+  // ===== Modal styles (new) =====
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(2,6,23,0.55)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    zIndex: 9999,
+  },
+  modal: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 520,
+    background: "#fff",
+    borderRadius: 18,
+    border: "1px solid rgba(15, 23, 42, 0.10)",
+    boxShadow: "0 24px 80px rgba(2, 6, 23, 0.18)",
+    overflow: "hidden",
+  },
+  modalHeader: {
+    padding: "16px 18px",
+    borderBottom: "1px solid rgba(15, 23, 42, 0.08)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalTitle: { margin: 0, fontSize: 16, fontWeight: 900 },
+  modalClose: {
+    height: 34,
+    width: 34,
+    borderRadius: 999,
+    border: "1px solid rgba(15, 23, 42, 0.12)",
+    background: "#fff",
+    cursor: "pointer",
+    fontWeight: 900,
+    lineHeight: "32px",
+  },
+  modalBody: { padding: "14px 18px", color: "rgba(15,23,42,0.84)" },
+  modalHint: { marginTop: 10, fontSize: 12, color: "rgba(15,23,42,0.62)" },
+  modalFooter: {
+    padding: "14px 18px 18px",
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  dangerText: { color: "#9f1239", fontWeight: 800 },
 };
+
+function ConfirmModal({
+  open,
+  title = "Confirm",
+  message,
+  dangerLabel = "Delete",
+  cancelLabel = "Cancel",
+  busy = false,
+  onCancel,
+  onConfirm,
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (open) setMounted(true);
+    else {
+      const t = setTimeout(() => setMounted(false), 120);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e) {
+      if (e.key === "Escape") onCancel?.();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onCancel]);
+
+  if (!mounted) return null;
+
+  // 简单淡入淡出 + 轻微上移（不引入 css 文件）
+  const overlayStyle = {
+    ...styles.overlay,
+    opacity: open ? 1 : 0,
+    transition: "opacity 120ms ease",
+  };
+
+  const modalStyle = {
+    ...styles.modal,
+    transform: open ? "translateY(0px) scale(1)" : "translateY(6px) scale(0.99)",
+    transition: "transform 120ms ease",
+  };
+
+  return (
+    <div style={overlayStyle}>
+      {/* 点击遮罩关闭 */}
+      <div
+        style={{ position: "absolute", inset: 0 }}
+        onClick={() => !busy && onCancel?.()}
+      />
+
+      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+        <div style={styles.modalHeader}>
+          <h3 style={styles.modalTitle}>{title}</h3>
+          <button
+            type="button"
+            style={{ ...styles.modalClose, ...(busy ? styles.buttonDisabled : {}) }}
+            disabled={busy}
+            onClick={() => onCancel?.()}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={styles.modalBody}>
+          <div>{message}</div>
+          <div style={styles.modalHint}>This action cannot be undone.</div>
+        </div>
+
+        <div style={styles.modalFooter}>
+          <button
+            type="button"
+            style={{ ...styles.button, ...(busy ? styles.buttonDisabled : {}) }}
+            disabled={busy}
+            onClick={() => onCancel?.()}
+          >
+            {cancelLabel}
+          </button>
+
+          <button
+            type="button"
+            style={{ ...styles.buttonDanger, ...(busy ? styles.buttonDisabled : {}) }}
+            disabled={busy}
+            onClick={() => onConfirm?.()}
+          >
+            {busy ? "Deleting..." : dangerLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function StaffRegister() {
   const { role } = useAuth();
@@ -207,6 +352,10 @@ export default function StaffRegister() {
 
   // row action loading (avoid multiple clicks)
   const [busyId, setBusyId] = useState(null);
+
+  // delete modal (new)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null); // {staffId, username}
 
   const isAdmin = useMemo(
     () => String(role || "").toUpperCase() === "ADMIN",
@@ -355,20 +504,27 @@ export default function StaffRegister() {
     }
   }
 
-  async function onDelete(row) {
-    const ok = window.confirm(
-      `Delete staff "${row.username}" (ID: ${row.staffId})? This cannot be undone.`,
-    );
-    if (!ok) return;
+  // 打开删除弹窗（不再用 window.confirm）
+  function onDelete(row) {
+    setMsg(null);
+    setErr(null);
+    setPendingDelete(row);
+    setConfirmOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
 
     try {
-      setBusyId(row.staffId);
+      setBusyId(pendingDelete.staffId);
       setErr(null);
       setMsg(null);
 
-      await api(`/admin/staff/${row.staffId}`, { method: "DELETE" });
+      await api(`/admin/staff/${pendingDelete.staffId}`, { method: "DELETE" });
 
       setMsg("Staff deleted.");
+      setConfirmOpen(false);
+      setPendingDelete(null);
       await reloadStaff();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -503,13 +659,13 @@ export default function StaffRegister() {
                   </tr>
                 ) : (
                   staff.map((row) => {
-                    const id = row.staffId ?? row.staff_id ?? row.id; // 兼容万一你后端字段名不同
+                    const id = row.staffId ?? row.staff_id ?? row.id;
                     const uname = row.username ?? "";
                     const active =
                       row.active ??
                       row.isActive ??
                       row.is_active ??
-                      row.is_active === 1 ??
+                      (row.is_active === 1) ??
                       true;
 
                     const isBusy = busyId === id;
@@ -569,9 +725,7 @@ export default function StaffRegister() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  startEdit({ staffId: id, username: uname })
-                                }
+                                onClick={() => startEdit({ staffId: id, username: uname })}
                                 style={styles.button}
                               >
                                 Rename
@@ -614,9 +768,7 @@ export default function StaffRegister() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  startResetPassword({ staffId: id })
-                                }
+                                onClick={() => startResetPassword({ staffId: id })}
                                 style={styles.button}
                               >
                                 Reset PW
@@ -627,9 +779,7 @@ export default function StaffRegister() {
                             <button
                               type="button"
                               disabled={isBusy}
-                              onClick={() =>
-                                onDelete({ staffId: id, username: uname })
-                              }
+                              onClick={() => onDelete({ staffId: id, username: uname })}
                               style={{
                                 ...styles.buttonDanger,
                                 ...(isBusy ? styles.buttonDisabled : {}),
@@ -648,6 +798,32 @@ export default function StaffRegister() {
           </div>
         </div>
       </div>
+
+      {/* ===== Nice Confirm Modal ===== */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete staff?"
+        busy={busyId === pendingDelete?.staffId}
+        message={
+          pendingDelete ? (
+            <span>
+              Are you sure you want to delete{" "}
+              <span style={styles.dangerText}>"{pendingDelete.username}"</span>{" "}
+              (ID: {pendingDelete.staffId})?
+            </span>
+          ) : (
+            ""
+          )
+        }
+        dangerLabel="Delete"
+        onCancel={() => {
+          if (busyId) return;
+          setConfirmOpen(false);
+          setPendingDelete(null);
+        }}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
+

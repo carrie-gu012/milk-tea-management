@@ -1,16 +1,21 @@
+// src/pages/Inventory.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  addInventoryStock,
-  getInventory,
-  setInventoryQuantity,
-} from "../api/inventory.jsx";
+import { getInventory, setInventoryQuantity } from "../api/inventory.jsx";
 import {
   createIngredient,
   updateIngredient,
   deleteIngredient,
 } from "../api/ingredients.jsx";
 
-const LOW_STOCK = 500;
+// ✅ low stock 阈值：按类型不同
+const LOW_STOCK_BY_TYPE = {
+  TOPPING: 500, // 珍珠等（g）
+  DAIRY: 2000, // 牛奶/奶类（ml）
+  TEA_BASE: 3000, // 茶底（ml）
+  SYRUP: 500, // 糖浆/柠檬汁（ml）
+  CONCENTRATE: 200, // 粉/酱/泥（g）
+};
+
 const PAGE_SIZE = 30;
 
 function getErrMsg(e) {
@@ -73,23 +78,20 @@ export default function Inventory() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("qtyAsc");
 
-  const [deltaDraft, setDeltaDraft] = useState({});
   const [qtyDraft, setQtyDraft] = useState({});
 
-
   const [page, setPage] = useState(1);
-
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
 
-  const [selected, setSelected] = useState(null); 
-
+  const [selected, setSelected] = useState(null);
 
   const [formName, setFormName] = useState("");
   const [formUnit, setFormUnit] = useState("");
-  const [formInitialQty, setFormInitialQty] = useState("0"); 
+  const [formType, setFormType] = useState("SYRUP");
+  const [formInitialQty, setFormInitialQty] = useState("0");
 
   async function load() {
     setLoading(true);
@@ -122,21 +124,22 @@ export default function Inventory() {
 
     const getQty = (x) => Number(x.quantity ?? 0);
     const getName = (x) => String(x.ingredientName ?? "");
+    const getType = (x) => String(x.type ?? "");
 
     if (sort === "qtyAsc") arr = [...arr].sort((a, b) => getQty(a) - getQty(b));
     if (sort === "qtyDesc")
       arr = [...arr].sort((a, b) => getQty(b) - getQty(a));
     if (sort === "nameAsc")
       arr = [...arr].sort((a, b) => getName(a).localeCompare(getName(b)));
+    if (sort === "typeAsc")
+      arr = [...arr].sort((a, b) => getType(a).localeCompare(getType(b)));
 
     return arr;
   }, [items, q, sort]);
 
-
   useEffect(() => {
     setPage(1);
   }, [q, sort]);
-
 
   const totalPages = Math.max(1, Math.ceil(view.length / PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -145,9 +148,15 @@ export default function Inventory() {
     return view.slice(start, start + PAGE_SIZE);
   }, [view, safePage]);
 
-  function statusOf(qty) {
+  function lowThresholdOf(type) {
+    const t = String(type || "").toUpperCase();
+    return LOW_STOCK_BY_TYPE[t] ?? 500;
+  }
+
+  function statusOf(qty, type) {
+    const low = lowThresholdOf(type);
     if (qty <= 0) return { text: "Out of stock", tone: "danger" };
-    if (qty <= LOW_STOCK) return { text: "Low", tone: "warn" };
+    if (qty <= low) return { text: `Low`, tone: "warn" };
     return { text: "OK", tone: "ok" };
   }
 
@@ -176,25 +185,6 @@ export default function Inventory() {
     };
   }
 
-  async function onAddStock(id) {
-    setErr("");
-    const raw = deltaDraft[id];
-    const delta = Number(raw);
-
-    if (!Number.isInteger(delta) || delta <= 0) {
-      setErr("delta must be a positive integer");
-      return;
-    }
-
-    try {
-      await addInventoryStock(id, delta);
-      setDeltaDraft((m) => ({ ...m, [id]: "" }));
-      await load();
-    } catch (e) {
-      setErr(getErrMsg(e));
-    }
-  }
-
   async function onSetQty(id) {
     setErr("");
     const raw = qtyDraft[id];
@@ -214,12 +204,11 @@ export default function Inventory() {
     }
   }
 
-
-
   function openAdd() {
     setErr("");
     setFormName("");
     setFormUnit("");
+    setFormType("SYRUP");
     setFormInitialQty("0");
     setAddOpen(true);
   }
@@ -229,6 +218,7 @@ export default function Inventory() {
     setSelected(row);
     setFormName(row.ingredientName || "");
     setFormUnit(row.unit || "");
+    setFormType(String(row.type || "SYRUP").toUpperCase());
     setEditOpen(true);
   }
 
@@ -242,6 +232,7 @@ export default function Inventory() {
     setErr("");
     const name = formName.trim();
     const unit = formUnit.trim();
+    const type = String(formType || "").toUpperCase();
     const initialQuantity = Number(formInitialQty);
 
     if (!name) {
@@ -252,13 +243,22 @@ export default function Inventory() {
       setErr("Unit is required (e.g., g, ml)");
       return;
     }
+    if (!type) {
+      setErr("Type is required");
+      return;
+    }
     if (!Number.isInteger(initialQuantity) || initialQuantity < 0) {
       setErr("Initial quantity must be an integer >= 0");
       return;
     }
 
     try {
-      await createIngredient({ ingredientName: name, unit, initialQuantity });
+      await createIngredient({
+        ingredientName: name,
+        unit,
+        type,
+        initialQuantity,
+      });
       setAddOpen(false);
       await load();
     } catch (e) {
@@ -272,6 +272,7 @@ export default function Inventory() {
 
     const name = formName.trim();
     const unit = formUnit.trim();
+    const type = String(formType || "").toUpperCase();
 
     if (!name) {
       setErr("Ingredient name is required");
@@ -281,11 +282,16 @@ export default function Inventory() {
       setErr("Unit is required");
       return;
     }
+    if (!type) {
+      setErr("Type is required");
+      return;
+    }
 
     try {
       await updateIngredient(selected.ingredientId, {
         ingredientName: name,
         unit,
+        type,
       });
       setEditOpen(false);
       setSelected(null);
@@ -328,8 +334,8 @@ export default function Inventory() {
             Inventory
           </h1>
           <p className="sub" style={{ marginTop: 8 }}>
-            Manage ingredient stock levels. Use <b>Add</b> to restock, and{" "}
-            <b>Set</b> for stock-taking adjustments.
+            Manage ingredient stock levels. Use <b>Set</b> for stock-taking
+            adjustments.
           </p>
         </div>
 
@@ -377,10 +383,16 @@ export default function Inventory() {
               <option value="qtyAsc">Quantity ↑</option>
               <option value="qtyDesc">Quantity ↓</option>
               <option value="nameAsc">Name A→Z</option>
+              <option value="typeAsc">Type A→Z</option>
             </select>
           </div>
 
-          <span className="pill">Low stock ≤ {LOW_STOCK}</span>
+          <span className="pill">
+            Low stock: TOPPING ≤ {LOW_STOCK_BY_TYPE.TOPPING}, DAIRY ≤{" "}
+            {LOW_STOCK_BY_TYPE.DAIRY}, TEA_BASE ≤ {LOW_STOCK_BY_TYPE.TEA_BASE},
+            SYRUP ≤ {LOW_STOCK_BY_TYPE.SYRUP}, CONCENTRATE ≤{" "}
+            {LOW_STOCK_BY_TYPE.CONCENTRATE}
+          </span>
           <span className="pill">Page size: {PAGE_SIZE}</span>
         </div>
 
@@ -405,7 +417,6 @@ export default function Inventory() {
             </span>
           </div>
 
-
           <span className="pill">
             Page {safePage} / {totalPages}
           </span>
@@ -417,6 +428,7 @@ export default function Inventory() {
               <tr>
                 <th style={thStyle}>ID</th>
                 <th style={thStyle}>Name</th>
+                <th style={thStyle}>Type</th>
                 <th style={thStyle}>Unit</th>
                 <th style={thStyle}>Quantity</th>
                 <th style={thStyle}>Status</th>
@@ -427,13 +439,13 @@ export default function Inventory() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={tdMuted}>
+                  <td colSpan={7} style={tdMuted}>
                     Loading inventory...
                   </td>
                 </tr>
               ) : paged.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={tdMuted}>
+                  <td colSpan={7} style={tdMuted}>
                     No inventory items found.
                   </td>
                 </tr>
@@ -441,12 +453,14 @@ export default function Inventory() {
                 paged.map((x) => {
                   const id = x.ingredientId;
                   const qty = Number(x.quantity ?? 0);
-                  const st = statusOf(qty);
+                  const type = String(x.type || "").toUpperCase();
+                  const st = statusOf(qty, type);
 
                   return (
                     <tr key={id}>
                       <td style={tdMuted}>{id}</td>
                       <td style={tdBold}>{x.ingredientName}</td>
+                      <td style={tdMuted}>{type || "-"}</td>
                       <td style={tdMuted}>{x.unit}</td>
                       <td style={tdBold}>{qty}</td>
                       <td style={tdBase}>
@@ -465,28 +479,6 @@ export default function Inventory() {
                             alignItems: "center",
                           }}
                         >
-                          {/* 库存操作 */}
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              className="input"
-                              value={deltaDraft[id] ?? ""}
-                              onChange={(e) =>
-                                setDeltaDraft((m) => ({
-                                  ...m,
-                                  [id]: e.target.value,
-                                }))
-                              }
-                              placeholder="delta"
-                              style={{ width: 110 }}
-                            />
-                            <button
-                              className="btn btn-primary"
-                              onClick={() => onAddStock(id)}
-                            >
-                              Add
-                            </button>
-                          </div>
-
                           <div style={{ display: "flex", gap: 8 }}>
                             <input
                               className="input"
@@ -508,7 +500,6 @@ export default function Inventory() {
                             </button>
                           </div>
 
-
                           <button className="btn" onClick={() => openEdit(x)}>
                             Edit
                           </button>
@@ -524,7 +515,6 @@ export default function Inventory() {
             </tbody>
           </table>
         </div>
-
 
         <div
           className="card-pad"
@@ -572,8 +562,23 @@ export default function Inventory() {
             className="input"
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
-            placeholder="e.g., Pearl, Milk, Black Tea"
+            placeholder="e.g., Pearl, Milk, Tea Base"
           />
+        </div>
+
+        <div className="field">
+          <div className="label">Type</div>
+          <select
+            className="input"
+            value={formType}
+            onChange={(e) => setFormType(e.target.value)}
+          >
+            <option value="TOPPING">TOPPING</option>
+            <option value="DAIRY">DAIRY</option>
+            <option value="TEA_BASE">TEA_BASE</option>
+            <option value="SYRUP">SYRUP</option>
+            <option value="CONCENTRATE">CONCENTRATE</option>
+          </select>
         </div>
 
         <div className="field">
@@ -619,6 +624,21 @@ export default function Inventory() {
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
           />
+        </div>
+
+        <div className="field">
+          <div className="label">Type</div>
+          <select
+            className="input"
+            value={formType}
+            onChange={(e) => setFormType(e.target.value)}
+          >
+            <option value="TOPPING">TOPPING</option>
+            <option value="DAIRY">DAIRY</option>
+            <option value="TEA_BASE">TEA_BASE</option>
+            <option value="SYRUP">SYRUP</option>
+            <option value="CONCENTRATE">CONCENTRATE</option>
+          </select>
         </div>
 
         <div className="field">

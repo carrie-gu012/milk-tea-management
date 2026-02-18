@@ -16,16 +16,21 @@ public class InventoryRepository {
 
     public List<Inventory> findAll() {
         String sql = """
-            SELECT i.ingredient_id, i.name, i.unit, inv.quantity
+            SELECT i.ingredient_id,
+                   i.name,
+                   i.unit,
+                   i.type,
+                   inv.quantity
             FROM inventory inv
             JOIN ingredient i ON i.ingredient_id = inv.ingredient_id
-            ORDER BY i.ingredient_id
+            ORDER BY i.type, i.name
         """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> new Inventory(
             rs.getInt("ingredient_id"),
             rs.getString("name"),
             rs.getString("unit"),
+            rs.getString("type"),     
             rs.getDouble("quantity")
         ));
     }

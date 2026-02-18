@@ -1,23 +1,29 @@
 // src/api/ingredients.jsx
 import { api } from "./client.jsx";
 
-// 创建 ingredient（建议后端：同时在 inventory 建一行 quantity，初始为 0 或传入 initialQuantity）
+// ✅ 获取所有 ingredients（带 type），给 recipe editor 下拉用
+export function listIngredients() {
+  return api("/ingredients");
+}
+
+// ✅ 创建 ingredient（需要 type）
 export function createIngredient({
   ingredientName,
   unit,
+  type,
   initialQuantity = 0,
 }) {
   return api("/ingredients", {
     method: "POST",
-    body: JSON.stringify({ ingredientName, unit, initialQuantity }),
+    body: JSON.stringify({ ingredientName, unit, type, initialQuantity }),
   });
 }
 
-// 编辑 ingredient（只改 name/unit）
-export function updateIngredient(ingredientId, { ingredientName, unit }) {
+// ✅ 编辑 ingredient（现在也允许改 type）
+export function updateIngredient(ingredientId, { ingredientName, unit, type }) {
   return api(`/ingredients/${ingredientId}`, {
     method: "PUT",
-    body: JSON.stringify({ ingredientName, unit }),
+    body: JSON.stringify({ ingredientName, unit, type }),
   });
 }
 

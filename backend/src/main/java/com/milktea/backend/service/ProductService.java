@@ -61,6 +61,36 @@ public class ProductService {
         recipeRepository.replaceRecipe(newId, req.getRecipe());
         return newId;
     }
+    // ================= UPDATE ⭐新增 =================
+    @Transactional
+    public void updateProduct(int productId, CreateProductRequest req) {
+
+        if (req.getName() == null || req.getName().trim().isEmpty()) {
+            throw new RuntimeException("Product name is required");
+        }
+
+        if (req.getPriceCents() == null || req.getPriceCents() <= 0) {
+            throw new RuntimeException("priceCents must be > 0");
+        }
+
+        if (req.getIsActive() == null) {
+            req.setIsActive(true);
+        }
+
+        // 更新 product 表
+        productRepository.update(
+                productId,
+                req.getName(),
+                req.getPriceCents(),
+                req.getIsActive()
+        );
+
+        // 更新 recipe
+        if (req.getRecipe() != null) {
+            recipeRepository.replaceRecipe(productId, req.getRecipe());
+        }
+    }
+
 
     public void deleteProduct(int productId) {
         int affected = productRepository.deleteById(productId);

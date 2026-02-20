@@ -56,4 +56,21 @@ public class ProductController {
                 "message", "Product deleted"
         ));
     }
+    // 5) PUT /products/{id} (更新 product，并替换 recipe)
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> update(
+            @PathVariable int id,
+            @RequestBody CreateProductRequest req) {
+
+        productService.updateProduct(id, req);
+
+        return ResponseEntity.ok(Map.of(
+                "productId", id,
+                "message", "Product updated"
+        ));
+    }
+
+
+        
+
 }

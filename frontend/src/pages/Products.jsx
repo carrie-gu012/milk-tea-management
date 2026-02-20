@@ -3,15 +3,12 @@ import React, { useEffect, useState } from "react";
 export default function Products() {
   const [products, setProducts] = useState([]);
 
-  // 读取角色（ADMIN / STAFF）
   const role = localStorage.getItem("role");
 
-  // 页面加载时获取数据
   useEffect(() => {
     loadProducts();
   }, []);
 
-  // 加载产品列表
   function loadProducts() {
     fetch("http://localhost:8080/products")
       .then((res) => res.json())
@@ -19,7 +16,6 @@ export default function Products() {
       .catch((err) => console.error("Error loading products:", err));
   }
 
-  // 删除产品
   function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
@@ -29,7 +25,6 @@ export default function Products() {
       method: "DELETE",
     })
       .then(() => {
-        // 删除成功后重新加载数据（最安全）
         loadProducts();
       })
       .catch((err) => console.error("Delete failed:", err));
@@ -52,7 +47,6 @@ export default function Products() {
             <th style={thStyle}>Price ($)</th>
             <th style={thStyle}>Active</th>
 
-            {/* ADMIN 才显示 */}
             {role === "ADMIN" && (
               <th style={thStyle}>Actions</th>
             )}
@@ -61,7 +55,7 @@ export default function Products() {
 
         <tbody>
           {products.map((p) => (
-            <tr key={p.id}>
+            <tr key={p.productId}>
               <td style={tdStyle}>{p.name}</td>
 
               <td style={tdStyle}>
@@ -72,11 +66,10 @@ export default function Products() {
                 {p.isActive ? "Yes" : "No"}
               </td>
 
-              {/* ADMIN 才能删除 */}
               {role === "ADMIN" && (
                 <td style={tdStyle}>
                   <button
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => handleDelete(p.productId)}
                     style={{
                       background: "#e74c3c",
                       color: "white",

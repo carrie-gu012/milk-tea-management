@@ -5,6 +5,7 @@ export default function Products() {
 
   const role = localStorage.getItem("role");
 
+  // ===== Create =====
   const [showForm, setShowForm] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
@@ -12,6 +13,9 @@ export default function Products() {
     priceCents: "",
     isActive: true,
   });
+
+  // ===== Edit =====
+  const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
     loadProducts();
@@ -24,6 +28,7 @@ export default function Products() {
       .catch((err) => console.error("Error loading products:", err));
   }
 
+  // ===== Delete =====
   function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
@@ -36,6 +41,7 @@ export default function Products() {
       .catch((err) => console.error("Delete failed:", err));
   }
 
+  // ===== Create =====
   function handleCreate() {
     fetch("http://localhost:8080/products", {
       method: "POST",
@@ -46,8 +52,6 @@ export default function Products() {
         name: newProduct.name,
         priceCents: Number(newProduct.priceCents),
         isActive: newProduct.isActive,
-
-        // ⭐ 正确字段
         recipe: [
           {
             ingredientId: 1,
@@ -70,27 +74,57 @@ export default function Products() {
       .catch((err) => console.error("Create failed:", err));
   }
 
+  // ===== Open Edit =====
+  function openEdit(product) {
+    setEditingProduct({
+      productId: product.productId,
+      name: product.name,
+      priceCents: product.priceCents,
+      isActive: product.isActive,
+    });
+  }
+
+  // ===== Update =====
+  function handleUpdate() {
+    fetch(`http://localhost:8080/products/${editingProduct.productId}`, {
+      method: "PUT", // 需要后端支持
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: editingProduct.name,
+        priceCents: Number(editingProduct.priceCents),
+        isActive: editingProduct.isActive,
+        recipe: [
+          {
+            ingredientId: 1,
+            qtyRequired: 1.0,
+          },
+        ],
+      }),
+    })
+      .then(() => {
+        setEditingProduct(null);
+        loadProducts();
+      })
+      .catch((err) => console.error("Update failed:", err));
+  }
+
   return (
     <div className="card" style={{ padding: 18 }}>
       <h2 style={{ margin: 0 }}>Products</h2>
 
+      {/* ===== Add Button ===== */}
       {role === "ADMIN" && (
         <button
           onClick={() => setShowForm(true)}
-          style={{
-            marginTop: 12,
-            background: "#3498db",
-            color: "white",
-            border: "none",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
+          style={btnBlue}
         >
           Add Product
         </button>
       )}
 
+      {/* ===== Create Form ===== */}
       {showForm && (
         <div style={{ marginTop: 20 }}>
           <h3>Add Product</h3>
@@ -99,10 +133,7 @@ export default function Products() {
             placeholder="Product Name"
             value={newProduct.name}
             onChange={(e) =>
-              setNewProduct({
-                ...newProduct,
-                name: e.target.value,
-              })
+              setNewProduct({ ...newProduct, name: e.target.value })
             }
           />
 
@@ -136,19 +167,70 @@ export default function Products() {
             Save
           </button>
 
-          <button onClick={() => setShowForm(false)} style={{ marginLeft: 5 }}>
+          <button
+            onClick={() => setShowForm(false)}
+            style={{ marginLeft: 5 }}
+          >
             Cancel
           </button>
         </div>
       )}
 
-      <table
-        style={{
-          marginTop: 16,
-          width: "100%",
-          borderCollapse: "collapse",
-        }}
-      >
+      {/* ===== Edit Form ===== */}
+      {editingProduct && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Edit Product</h3>
+
+          <input
+            value={editingProduct.name}
+            onChange={(e) =>
+              setEditingProduct({
+                ...editingProduct,
+                name: e.target.value,
+              })
+            }
+          />
+
+          <input
+            value={editingProduct.priceCents}
+            onChange={(e) =>
+              setEditingProduct({
+                ...editingProduct,
+                priceCents: e.target.value,
+              })
+            }
+            style={{ marginLeft: 10 }}
+          />
+
+          <label style={{ marginLeft: 10 }}>
+            Active
+            <input
+              type="checkbox"
+              checked={editingProduct.isActive}
+              onChange={(e) =>
+                setEditingProduct({
+                  ...editingProduct,
+                  isActive: e.target.checked,
+                })
+              }
+            />
+          </label>
+
+          <button onClick={handleUpdate} style={{ marginLeft: 10 }}>
+            Save
+          </button>
+
+          <button
+            onClick={() => setEditingProduct(null)}
+            style={{ marginLeft: 5 }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* ===== Product Table ===== */}
+      <table style={tableStyle}>
         <thead>
           <tr>
             <th style={thStyle}>Name</th>
@@ -177,15 +259,15 @@ export default function Products() {
               {role === "ADMIN" && (
                 <td style={tdStyle}>
                   <button
+                    onClick={() => openEdit(p)}
+                    style={btnEdit}
+                  >
+                    Edit
+                  </button>
+
+                  <button
                     onClick={() => handleDelete(p.productId)}
-                    style={{
-                      background: "#e74c3c",
-                      color: "white",
-                      border: "none",
-                      padding: "6px 10px",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
+                    style={btnDelete}
                   >
                     Delete
                   </button>
@@ -199,6 +281,14 @@ export default function Products() {
   );
 }
 
+/* ===== Styles ===== */
+
+const tableStyle = {
+  marginTop: 16,
+  width: "100%",
+  borderCollapse: "collapse",
+};
+
 const thStyle = {
   borderBottom: "1px solid #ddd",
   textAlign: "left",
@@ -208,4 +298,33 @@ const thStyle = {
 const tdStyle = {
   borderBottom: "1px solid #eee",
   padding: "8px",
+};
+
+const btnBlue = {
+  marginTop: 12,
+  background: "#3498db",
+  color: "white",
+  border: "none",
+  padding: "8px 12px",
+  borderRadius: "4px",
+  cursor: "pointer",
+};
+
+const btnDelete = {
+  background: "#e74c3c",
+  color: "white",
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: "4px",
+  cursor: "pointer",
+  marginLeft: 6,
+};
+
+const btnEdit = {
+  background: "#f39c12",
+  color: "white",
+  border: "none",
+  padding: "6px 10px",
+  borderRadius: "4px",
+  cursor: "pointer",
 };

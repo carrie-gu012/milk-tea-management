@@ -79,6 +79,26 @@ public class ProductRepository {
         return key.intValue();
     }
 
+    // ✅ PUT /products/{id}
+    public int update(int productId, String name, int priceCents, boolean isActive) {
+
+        String sql = """
+                UPDATE product
+                SET name = ?, price_cents = ?, is_active = ?
+                WHERE product_id = ?
+                """;
+
+        return jdbcTemplate.update(
+                sql,
+                name,
+                priceCents,
+                isActive,
+                productId
+        );
+    }
+    
+
+
     // ✅ 用于 DELETE /products/{id}
     public int deleteById(int productId) {
         String sql = "DELETE FROM product WHERE product_id = ?";

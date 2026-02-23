@@ -294,6 +294,7 @@ export default function Products() {
           <h2 className="page-title">Product Management</h2>
           <div className="page-sub">
             Manage products and their recipes. Inactive products can be deleted.
+            (✅Only admin can edit)
           </div>
         </div>
 

@@ -1,7 +1,11 @@
-// src/pages/Home.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
+import { getDashboardSummary } from "../api/dashboard.jsx";
+
+function formatMoney(cents) {
+  return `$${((cents || 0) / 100).toFixed(2)}`;
+}
 
 function StatCard({ title, value, sub }) {
   return (
@@ -49,17 +53,65 @@ export default function Home() {
   const nav = useNavigate();
   const { username, role } = useAuth();
 
-  // 先用假数据占位，后面接后端再替换
+  const [summary, setSummary] = useState({
+    todayOrders: 0,
+    revenueCents: 0,
+    lowStockItems: 0,
+    pendingOrders: 0,
+    recentOrders: [],
+    alerts: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await getDashboardSummary();
+        setSummary({
+          todayOrders: data.todayOrders ?? 0,
+          revenueCents: data.revenueCents ?? 0,
+          lowStockItems: data.lowStockItems ?? 0,
+          pendingOrders: data.pendingOrders ?? 0,
+          recentOrders: data.recentOrders ?? [],
+          alerts: data.alerts ?? [],
+        });
+        setError("");
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const stats = [
-    { title: "Today Orders", value: "—", sub: "Connect DB later" },
-    { title: "Revenue", value: "—", sub: "Connect DB later" },
-    { title: "Low Stock Items", value: "—", sub: "Connect DB later" },
-    { title: "Pending Orders", value: "—", sub: "Connect DB later" },
+    {
+      title: "Today Orders",
+      value: summary.todayOrders,
+      sub: "Orders created today",
+    },
+    {
+      title: "Revenue",
+      value: formatMoney(summary.revenueCents),
+      sub: "Completed orders today",
+    },
+    {
+      title: "Low Stock Items",
+      value: summary.lowStockItems,
+      sub: "Items below threshold",
+    },
+    {
+      title: "Pending Orders",
+      value: summary.pendingOrders,
+      sub: "Orders not completed yet",
+    },
   ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Header */}
       <div className="card" style={{ padding: 16 }}>
         <div
           style={{
@@ -76,16 +128,21 @@ export default function Home() {
             </div>
           </div>
 
-          <button
-            className="btn btn-primary"
-            onClick={() => nav("/orders/")}
-          >
+          <button className="btn btn-primary" onClick={() => nav("/orders/")}>
             + New Order
           </button>
         </div>
       </div>
 
-      {/* Quick actions */}
+      {error && (
+        <div
+          className="card"
+          style={{ padding: 16, color: "#b91c1c", borderColor: "#b91c1c" }}
+        >
+          {error}
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -115,7 +172,6 @@ export default function Home() {
         />
       </div>
 
-      {/* Stats */}
       <div
         style={{
           display: "grid",
@@ -124,11 +180,15 @@ export default function Home() {
         }}
       >
         {stats.map((s) => (
-          <StatCard key={s.title} title={s.title} value={s.value} sub={s.sub} />
+          <StatCard
+            key={s.title}
+            title={s.title}
+            value={loading ? "..." : s.value}
+            sub={s.sub}
+          />
         ))}
       </div>
 
-      {/* Recent / Alerts */}
       <div
         style={{
           display: "grid",
@@ -139,7 +199,7 @@ export default function Home() {
         <div className="card" style={{ padding: 16 }}>
           <div style={{ fontWeight: 900 }}>Recent Orders</div>
           <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
-            Placeholder list (connect backend later)
+            Latest orders from database
           </div>
 
           <div
@@ -150,10 +210,23 @@ export default function Home() {
               gap: 10,
             }}
           >
-            {["#10021 · Pending", "#10020 · Completed", "#10019 · Pending"].map(
-              (t) => (
+            {loading ? (
+              <div>Loading...</div>
+            ) : summary.recentOrders.length === 0 ? (
+              <div
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "10px 12px",
+                  background: "rgba(255,255,255,0.7)",
+                }}
+              >
+                No recent orders.
+              </div>
+            ) : (
+              summary.recentOrders.map((o) => (
                 <div
-                  key={t}
+                  key={o.orderId}
                   style={{
                     border: "1px solid var(--border)",
                     borderRadius: 14,
@@ -161,9 +234,9 @@ export default function Home() {
                     background: "rgba(255,255,255,0.7)",
                   }}
                 >
-                  {t}
+                  #{o.orderId} · {o.status} · by {o.createdBy}
                 </div>
-              ),
+              ))
             )}
           </div>
         </div>
@@ -182,20 +255,36 @@ export default function Home() {
               gap: 10,
             }}
           >
-            <div
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                padding: "10px 12px",
-              }}
-            >
-              No alerts yet.
-            </div>
+            {loading ? (
+              <div>Loading...</div>
+            ) : summary.alerts.length === 0 ? (
+              <div
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "10px 12px",
+                }}
+              >
+                No alerts yet.
+              </div>
+            ) : (
+              summary.alerts.map((a, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    padding: "10px 12px",
+                  }}
+                >
+                  {a}
+                </div>
+              ))
+            )}
 
-            {/* 以后你可以让 admin 才显示 register staff */}
             {role === "ADMIN" && (
               <button
-                className="btn"
+                className="btn btn-primary"
                 onClick={() => nav("/staff/register")}
                 style={{ width: "fit-content" }}
               >
@@ -205,8 +294,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* 小屏幕响应：你要的话我也可以给你加 media query */}
     </div>
   );
 }

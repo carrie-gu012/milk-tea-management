@@ -53,7 +53,7 @@ export default function Home() {
   const stats = [
     { title: "Today Orders", value: "—", sub: "Connect DB later" },
     { title: "Revenue", value: "—", sub: "Connect DB later" },
-    { title: "Low Stock Items", value: "—", sub: "Admin view" },
+    { title: "Low Stock Items", value: "—", sub: "Connect DB later" },
     { title: "Pending Orders", value: "—", sub: "Connect DB later" },
   ];
 
@@ -102,6 +102,11 @@ export default function Home() {
           title="Products"
           desc="Create / edit product menu items."
           onClick={() => nav("/products")}
+        />
+        <ActionCard
+          title="Recipes"
+          desc="View recipe summary by product."
+          onClick={() => nav("/recipes")}
         />
         <ActionCard
           title="Inventory"

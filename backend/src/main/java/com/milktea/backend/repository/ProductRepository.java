@@ -35,7 +35,7 @@ public class ProductRepository {
         ));
     }
 
-    // ✅ 用于 GET /products/{id}
+   
     public Product findById(int productId) {
         String sql = """
                 SELECT product_id, name, price_cents, is_active
@@ -50,12 +50,11 @@ public class ProductRepository {
                     rs.getBoolean("is_active")
             ), productId);
         } catch (EmptyResultDataAccessException e) {
-            // 你也可以改成抛自定义异常，然后 Controller 返回 404
+            
             throw new RuntimeException("Product not found: " + productId);
         }
     }
 
-    // ✅ 用于 POST /products：插入并返回自增 product_id
     public int insert(String name, int priceCents, boolean isActive) {
         String sql = """
                 INSERT INTO product(name, price_cents, is_active)
@@ -79,7 +78,7 @@ public class ProductRepository {
         return key.intValue();
     }
 
-    // ✅ PUT /products/{id}
+  
     public int update(int productId, String name, int priceCents, boolean isActive) {
 
         String sql = """
@@ -96,10 +95,31 @@ public class ProductRepository {
                 productId
         );
     }
+
+    public int deactivateUnsellableProducts() {
+    String sql = """
+        UPDATE product p
+        SET p.is_active = 0
+        WHERE p.is_active = 1
+          AND EXISTS (
+              SELECT 1
+              FROM recipe r
+              LEFT JOIN inventory inv
+                     ON inv.ingredient_id = r.ingredient_id
+              WHERE r.product_id = p.product_id
+                AND (
+                    inv.ingredient_id IS NULL
+                    OR inv.quantity < r.qty_required
+                )
+          )
+        """;
+
+    return jdbcTemplate.update(sql);
+    }
     
 
 
-    // ✅ 用于 DELETE /products/{id}
+
     public int deleteById(int productId) {
         String sql = "DELETE FROM product WHERE product_id = ?";
         return jdbcTemplate.update(sql, productId);

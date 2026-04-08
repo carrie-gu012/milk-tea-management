@@ -43,7 +43,7 @@ public class ProductService {
 
     @Transactional
     public int createProduct(CreateProductRequest req) {
-        // 基础校验（避免空数据）
+        
         if (req.getName() == null || req.getName().trim().isEmpty()) {
             throw new RuntimeException("Product name is required");
         }
@@ -57,11 +57,15 @@ public class ProductService {
             throw new RuntimeException("Recipe is required (at least 1 ingredient)");
         }
 
+
         int newId = productRepository.insert(req.getName(), req.getPriceCents(), req.getIsActive());
         recipeRepository.replaceRecipe(newId, req.getRecipe());
+
+        productRepository.deactivateUnsellableProducts();
+
         return newId;
     }
-    // ================= UPDATE ⭐新增 =================
+    // ================= UPDATE  =================
     @Transactional
     public void updateProduct(int productId, CreateProductRequest req) {
 
@@ -77,7 +81,7 @@ public class ProductService {
             req.setIsActive(true);
         }
 
-        // 更新 product 表
+        // update product 
         productRepository.update(
                 productId,
                 req.getName(),
@@ -85,10 +89,12 @@ public class ProductService {
                 req.getIsActive()
         );
 
-        // 更新 recipe
+        // update recipe
         if (req.getRecipe() != null) {
             recipeRepository.replaceRecipe(productId, req.getRecipe());
         }
+
+        productRepository.deactivateUnsellableProducts();
     }
 
 

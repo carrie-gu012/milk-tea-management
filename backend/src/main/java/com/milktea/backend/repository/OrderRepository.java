@@ -21,7 +21,7 @@ public class OrderRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // ✅ 改：create(createdBy)
+    
     public int create(String createdBy) {
         String sql = "INSERT INTO orders (status, created_by) VALUES ('CREATED', ?)";
         KeyHolder kh = new GeneratedKeyHolder();

@@ -110,9 +110,12 @@ export default function Analytics() {
                 </ResponsiveContainer>
             </div>
 
-            {/* Most Consumed Ingredients - Pie Chart */}
+            {/* Most Consumed Ingredients - Pie Chart (shows consumption % relative to current stock) */}
             <div className="card card-pad">
                 <h3 style={{ marginTop: 0 }}>Most Consumed Ingredients</h3>
+                <div className="muted" style={{ marginBottom: '12px', fontSize: '13px' }}>
+                    * Percentage of stock consumed from completed orders
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                         <Pie
@@ -122,44 +125,26 @@ export default function Analytics() {
                             cx="50%"
                             cy="50%"
                             outerRadius={100}
-                            label
+                            label={({ percent }) => `${(percent * 100).toFixed(1)}%`}   // ← show % on slices
                         >
                             {ingredientUsage.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value) => `${value}%`} />   // ← add % in tooltip
                     </PieChart>
                 </ResponsiveContainer>
             </div>
 
-            {/* Low Stock Alerts - Table */}
+            {/* Total Revenue (Last 7 Days) */}
             <div className="card card-pad">
-                <h3 style={{ marginTop: 0 }}>Low Stock Alerts (Threshold = 500)</h3>
-                {lowStock.length === 0 ? (
-                    <p>All ingredients are above threshold.</p>
-                ) : (
-                    <div style={{ overflowX: "auto" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                                <tr>
-                                    <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border)" }}>Ingredient</th>
-                                    <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border)" }}>Current Quantity</th>
-                                    <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border)" }}>Threshold</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {lowStock.map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td style={{ padding: "8px", borderBottom: "1px solid var(--border)" }}>{item.ingredientName}</td>
-                                        <td style={{ padding: "8px", borderBottom: "1px solid var(--border)" }}>{item.currentQuantity}</td>
-                                        <td style={{ padding: "8px", borderBottom: "1px solid var(--border)" }}>{item.threshold}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                <h3 style={{ marginTop: 0 }}>Total Revenue (Last 7 Days)</h3>
+                <div style={{ fontSize: 32, fontWeight: 900, margin: "16px 0" }}>
+                    {formatMoney(dailySales.reduce((sum, day) => sum + day.totalCents, 0))}
+                </div>
+                <p className="muted" style={{ fontSize: 13 }}>
+                    Based on completed orders in the last 7 days.
+                </p>
             </div>
         </div>
     );

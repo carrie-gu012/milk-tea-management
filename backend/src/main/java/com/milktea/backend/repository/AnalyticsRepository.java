@@ -16,18 +16,18 @@ public class AnalyticsRepository {
     }
 
     public List<TopProduct> findTopSellingProducts() {
-    String sql = """
-        SELECT p.name AS productName, SUM(oi.quantity) AS totalQuantitySold
-        FROM order_item oi
-        JOIN orders o ON oi.order_id = o.order_id
-        JOIN product p ON oi.product_id = p.product_id
-        WHERE o.status = 'COMPLETED'
-        GROUP BY p.product_id, p.name
-        ORDER BY totalQuantitySold DESC
-        LIMIT 5
-    """;
-    return jdbcTemplate.query(sql, (rs, rowNum) ->
-            new TopProduct(rs.getString("productName"), rs.getInt("totalQuantitySold")));
+        String sql = """
+            SELECT p.name AS productName, SUM(oi.quantity) AS totalQuantitySold
+            FROM order_item oi
+            JOIN orders o ON oi.order_id = o.order_id
+            JOIN product p ON oi.product_id = p.product_id
+            WHERE o.status = 'COMPLETED'
+            GROUP BY p.product_id, p.name
+            ORDER BY totalQuantitySold DESC
+            LIMIT 5
+        """;
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
+                new TopProduct(rs.getString("productName"), rs.getInt("totalQuantitySold")));
     }
 
     public List<DailySale> findDailySalesLast7Days() {
@@ -45,20 +45,24 @@ public class AnalyticsRepository {
     }
 
     public List<IngredientUsage> findMostConsumedIngredients() {
-    String sql = """
-        SELECT i.name AS ingredientName,
-               SUM(r.qty_required * oi.quantity) AS totalQuantityUsed
-        FROM order_item oi
-        JOIN orders o ON oi.order_id = o.order_id
-        JOIN recipe r ON oi.product_id = r.product_id
-        JOIN ingredient i ON r.ingredient_id = i.ingredient_id
-        WHERE o.status = 'COMPLETED'
-        GROUP BY i.ingredient_id, i.name
-        ORDER BY totalQuantityUsed DESC
-        LIMIT 5
-    """;
-    return jdbcTemplate.query(sql, (rs, rowNum) ->
-            new IngredientUsage(rs.getString("ingredientName"), rs.getDouble("totalQuantityUsed")));
+        String sql = """
+            SELECT i.name AS ingredientName,
+                   ROUND(
+                       (SUM(r.qty_required * oi.quantity) / 
+                        (SUM(r.qty_required * oi.quantity) + inv.quantity)) * 100, 2
+                   ) AS totalQuantityUsed
+            FROM order_item oi
+            JOIN orders o ON oi.order_id = o.order_id
+            JOIN recipe r ON oi.product_id = r.product_id
+            JOIN ingredient i ON r.ingredient_id = i.ingredient_id
+            JOIN inventory inv ON i.ingredient_id = inv.ingredient_id
+            WHERE o.status = 'COMPLETED'
+            GROUP BY i.ingredient_id, i.name, inv.quantity
+            ORDER BY totalQuantityUsed DESC
+            LIMIT 5
+        """;
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
+                new IngredientUsage(rs.getString("ingredientName"), rs.getDouble("totalQuantityUsed")));
     }
 
     public List<LowStockAlert> findLowStockAlerts() {

@@ -77,6 +77,7 @@ export default function Analytics() {
     );
   }
 
+  // Kept from 'main': Important loading state
   if (loading) {
     return (
       <div className="container">
@@ -87,6 +88,7 @@ export default function Analytics() {
     );
   }
 
+  // Kept from 'main': Important error state
   if (error) {
     return (
       <div className="container">
@@ -106,6 +108,17 @@ export default function Analytics() {
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>Analytics Dashboard</h2>
         <p style={{ marginTop: 6, color: "var(--muted)" }}>
           Data insights for sales, product performance, and ingredient usage.
+        </p>
+      </div>
+
+      {/* Kept from 'analytics': New Total Revenue Card */}
+      <div className="card card-pad">
+        <h3 style={{ marginTop: 0 }}>Total Revenue (Last 7 Days)</h3>
+        <div style={{ fontSize: 32, fontWeight: 900, margin: "16px 0" }}>
+          {formatMoney(dailySales.reduce((sum, day) => sum + day.totalCents, 0))}
+        </div>
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+          Based on completed orders in the last 7 days.
         </p>
       </div>
 
@@ -137,8 +150,12 @@ export default function Analytics() {
         </ResponsiveContainer>
       </div>
 
+      {/* Kept from 'analytics': Upgraded Pie Chart with % formatting */}
       <div className="card card-pad">
         <h3 style={{ marginTop: 0 }}>Most Consumed Ingredients</h3>
+        <div className="muted" style={{ marginBottom: "12px", fontSize: "13px" }}>
+          * Percentage of stock consumed from completed orders
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -148,13 +165,13 @@ export default function Analytics() {
               cx="50%"
               cy="50%"
               outerRadius={100}
-              label
+              label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
             >
               {ingredientUsage.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip formatter={(value) => `${value}%`} />
           </PieChart>
         </ResponsiveContainer>
       </div>

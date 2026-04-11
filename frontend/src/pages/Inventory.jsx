@@ -1,4 +1,3 @@
-// src/pages/Inventory.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { getInventory, setInventoryQuantity } from "../api/inventory.jsx";
 import {
@@ -6,6 +5,7 @@ import {
   updateIngredient,
   deleteIngredient,
 } from "../api/ingredients.jsx";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 // ✅ low stock 阈值：按类型不同
 const LOW_STOCK_BY_TYPE = {
@@ -71,6 +71,9 @@ function Modal({ open, title, children, onClose }) {
 }
 
 export default function Inventory() {
+  const { role } = useAuth();
+  const canModify = role === "ADMIN";
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -156,7 +159,7 @@ export default function Inventory() {
   function statusOf(qty, type) {
     const low = lowThresholdOf(type);
     if (qty <= 0) return { text: "None", tone: "danger" };
-    if (qty <= low) return { text: `Low`, tone: "warn" };
+    if (qty <= low) return { text: "Low", tone: "warn" };
     return { text: "OK", tone: "ok" };
   }
 
@@ -186,6 +189,11 @@ export default function Inventory() {
   }
 
   async function onSetQty(id) {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     const raw = qtyDraft[id];
     const quantity = Number(raw);
@@ -205,6 +213,11 @@ export default function Inventory() {
   }
 
   function openAdd() {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     setFormName("");
     setFormUnit("");
@@ -214,6 +227,11 @@ export default function Inventory() {
   }
 
   function openEdit(row) {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     setSelected(row);
     setFormName(row.ingredientName || "");
@@ -223,12 +241,22 @@ export default function Inventory() {
   }
 
   function openDelete(row) {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     setSelected(row);
     setDelOpen(true);
   }
 
   async function submitAddIngredient() {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     const name = formName.trim();
     const unit = formUnit.trim();
@@ -267,6 +295,11 @@ export default function Inventory() {
   }
 
   async function submitEditIngredient() {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     if (!selected) return;
 
@@ -302,6 +335,11 @@ export default function Inventory() {
   }
 
   async function submitDeleteIngredient() {
+    if (!canModify) {
+      setErr("Only admin can modify inventory.");
+      return;
+    }
+
     setErr("");
     if (!selected) return;
 
@@ -340,14 +378,27 @@ export default function Inventory() {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button className="btn btn-primary" onClick={openAdd}>
-            + Add Ingredient
-          </button>
+          {canModify && (
+            <button className="btn btn-primary" onClick={openAdd}>
+              + Add Ingredient
+            </button>
+          )}
           <button className="btn" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
+
+      {!canModify && (
+        <div className="card card-pad" style={{ marginTop: 14 }}>
+          <div style={{ fontWeight: 900, fontSize: 32, marginBottom: 8 }}>
+            View Only
+          </div>
+          <div style={{ color: "var(--muted)" }}>
+            Only admin can modify inventory. Staff can view inventory data only.
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="card card-pad" style={{ marginTop: 14 }}>
@@ -470,43 +521,50 @@ export default function Inventory() {
                       </td>
 
                       <td style={{ ...tdBase, textAlign: "right" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 10,
-                            flexWrap: "wrap",
-                            alignItems: "center",
-                          }}
-                        >
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              className="input"
-                              value={qtyDraft[id] ?? ""}
-                              onChange={(e) =>
-                                setQtyDraft((m) => ({
-                                  ...m,
-                                  [id]: e.target.value,
-                                }))
-                              }
-                              placeholder="set qty"
-                              style={{ width: 130 }}
-                            />
+                        {canModify ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 10,
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <input
+                                className="input"
+                                value={qtyDraft[id] ?? ""}
+                                onChange={(e) =>
+                                  setQtyDraft((m) => ({
+                                    ...m,
+                                    [id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="set qty"
+                                style={{ width: 130 }}
+                              />
+                              <button
+                                className="btn btn-primary"
+                                onClick={() => onSetQty(id)}
+                              >
+                                Set
+                              </button>
+                            </div>
+
+                            <button className="btn" onClick={() => openEdit(x)}>
+                              Edit
+                            </button>
                             <button
-                              className="btn btn-primary"
-                              onClick={() => onSetQty(id)}
+                              className="btn"
+                              onClick={() => openDelete(x)}
                             >
-                              Set
+                              Delete
                             </button>
                           </div>
-
-                          <button className="btn" onClick={() => openEdit(x)}>
-                            Edit
-                          </button>
-                          <button className="btn" onClick={() => openDelete(x)}>
-                            Delete
-                          </button>
-                        </div>
+                        ) : (
+                          <span className="pill">View only</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -551,149 +609,158 @@ export default function Inventory() {
       </div>
 
       {/* ============ Add Modal ============ */}
-      <Modal
-        open={addOpen}
-        title="Add Ingredient"
-        onClose={() => setAddOpen(false)}
-      >
-        <div className="field">
-          <div className="label">Ingredient Name</div>
-          <input
-            className="input"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder="e.g., Pearl, Milk, Tea Base"
-          />
-        </div>
+      {canModify && (
+        <Modal
+          open={addOpen}
+          title="Add Ingredient"
+          onClose={() => setAddOpen(false)}
+        >
+          <div className="field">
+            <div className="label">Ingredient Name</div>
+            <input
+              className="input"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="e.g., Pearl, Milk, Tea Base"
+            />
+          </div>
 
-        <div className="field">
-          <div className="label">Type</div>
-          <select
-            className="input"
-            value={formType}
-            onChange={(e) => setFormType(e.target.value)}
-          >
-            <option value="TOPPING">TOPPING</option>
-            <option value="DAIRY">DAIRY</option>
-            <option value="TEA_BASE">TEA_BASE</option>
-            <option value="SYRUP">SYRUP</option>
-            <option value="CONCENTRATE">CONCENTRATE</option>
-          </select>
-        </div>
+          <div className="field">
+            <div className="label">Type</div>
+            <select
+              className="input"
+              value={formType}
+              onChange={(e) => setFormType(e.target.value)}
+            >
+              <option value="TOPPING">TOPPING</option>
+              <option value="DAIRY">DAIRY</option>
+              <option value="TEA_BASE">TEA_BASE</option>
+              <option value="SYRUP">SYRUP</option>
+              <option value="CONCENTRATE">CONCENTRATE</option>
+            </select>
+          </div>
 
-        <div className="field">
-          <div className="label">Unit</div>
-          <input
-            className="input"
-            value={formUnit}
-            onChange={(e) => setFormUnit(e.target.value)}
-            placeholder="e.g., g, ml"
-          />
-        </div>
+          <div className="field">
+            <div className="label">Unit</div>
+            <input
+              className="input"
+              value={formUnit}
+              onChange={(e) => setFormUnit(e.target.value)}
+              placeholder="e.g., g, ml"
+            />
+          </div>
 
-        <div className="field">
-          <div className="label">Initial Quantity</div>
-          <input
-            className="input"
-            value={formInitialQty}
-            onChange={(e) => setFormInitialQty(e.target.value)}
-            placeholder="0"
-          />
-        </div>
+          <div className="field">
+            <div className="label">Initial Quantity</div>
+            <input
+              className="input"
+              value={formInitialQty}
+              onChange={(e) => setFormInitialQty(e.target.value)}
+              placeholder="0"
+            />
+          </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button className="btn" onClick={() => setAddOpen(false)}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={submitAddIngredient}>
-            Create
-          </button>
-        </div>
-      </Modal>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button className="btn" onClick={() => setAddOpen(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={submitAddIngredient}>
+              Create
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {/* ============ Edit Modal ============ */}
-      <Modal
-        open={editOpen}
-        title="Edit Ingredient"
-        onClose={() => setEditOpen(false)}
-      >
-        <div className="field">
-          <div className="label">Ingredient Name</div>
-          <input
-            className="input"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-          />
-        </div>
+      {canModify && (
+        <Modal
+          open={editOpen}
+          title="Edit Ingredient"
+          onClose={() => setEditOpen(false)}
+        >
+          <div className="field">
+            <div className="label">Ingredient Name</div>
+            <input
+              className="input"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+            />
+          </div>
 
-        <div className="field">
-          <div className="label">Type</div>
-          <select
-            className="input"
-            value={formType}
-            onChange={(e) => setFormType(e.target.value)}
-          >
-            <option value="TOPPING">TOPPING</option>
-            <option value="DAIRY">DAIRY</option>
-            <option value="TEA_BASE">TEA_BASE</option>
-            <option value="SYRUP">SYRUP</option>
-            <option value="CONCENTRATE">CONCENTRATE</option>
-          </select>
-        </div>
+          <div className="field">
+            <div className="label">Type</div>
+            <select
+              className="input"
+              value={formType}
+              onChange={(e) => setFormType(e.target.value)}
+            >
+              <option value="TOPPING">TOPPING</option>
+              <option value="DAIRY">DAIRY</option>
+              <option value="TEA_BASE">TEA_BASE</option>
+              <option value="SYRUP">SYRUP</option>
+              <option value="CONCENTRATE">CONCENTRATE</option>
+            </select>
+          </div>
 
-        <div className="field">
-          <div className="label">Unit</div>
-          <input
-            className="input"
-            value={formUnit}
-            onChange={(e) => setFormUnit(e.target.value)}
-          />
-        </div>
+          <div className="field">
+            <div className="label">Unit</div>
+            <input
+              className="input"
+              value={formUnit}
+              onChange={(e) => setFormUnit(e.target.value)}
+            />
+          </div>
 
-        <div style={{ marginTop: 10 }}>
-          <span className="pill">
-            Quantity is managed via “Set qty” in the table.
-          </span>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button className="btn" onClick={() => setEditOpen(false)}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={submitEditIngredient}>
-            Save
-          </button>
-        </div>
-      </Modal>
-
-      {/* ============ Delete Confirm Modal ============ */}
-      <Modal
-        open={delOpen}
-        title="Delete Ingredient"
-        onClose={() => setDelOpen(false)}
-      >
-        <div style={{ color: "var(--muted)", lineHeight: 1.6 }}>
-          Are you sure you want to delete{" "}
-          <b style={{ color: "var(--text)" }}>
-            {selected?.ingredientName || "this ingredient"}
-          </b>
-          ?
           <div style={{ marginTop: 10 }}>
-            <span className="pill" style={pillStyle("warn")}>
-              If this ingredient is used by recipes, delete may fail.
+            <span className="pill">
+              Quantity is managed via “Set qty” in the table.
             </span>
           </div>
-        </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button className="btn" onClick={() => setDelOpen(false)}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={submitDeleteIngredient}>
-            Delete
-          </button>
-        </div>
-      </Modal>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button className="btn" onClick={() => setEditOpen(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={submitEditIngredient}>
+              Save
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* ============ Delete Confirm Modal ============ */}
+      {canModify && (
+        <Modal
+          open={delOpen}
+          title="Delete Ingredient"
+          onClose={() => setDelOpen(false)}
+        >
+          <div style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+            Are you sure you want to delete{" "}
+            <b style={{ color: "var(--text)" }}>
+              {selected?.ingredientName || "this ingredient"}
+            </b>
+            ?
+            <div style={{ marginTop: 10 }}>
+              <span className="pill" style={pillStyle("warn")}>
+                If this ingredient is used by recipes, delete may fail.
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button className="btn" onClick={() => setDelOpen(false)}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={submitDeleteIngredient}
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

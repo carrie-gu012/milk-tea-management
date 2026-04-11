@@ -45,7 +45,7 @@ public class IngredientRepository {
         return jdbcTemplate.update(sql, ingredientId);
     }
 
-    // ✅ 新增：给 /ingredients 列表用（按 type/name 排序）
+
     public List<Map<String, Object>> findAll() {
         String sql = """
             SELECT ingredient_id, name, unit, type

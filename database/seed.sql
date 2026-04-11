@@ -236,3 +236,65 @@ INSERT INTO recipe (product_id, ingredient_id, qty_required)
 SELECT p.product_id, i.ingredient_id, 15
 FROM product p JOIN ingredient i
 WHERE p.name='Matcha Latte' AND i.name='Sugar Syrup';
+
+
+-- =========================
+-- Orders
+-- =========================
+
+INSERT INTO orders (order_id, status, created_at, created_by) VALUES
+(1, 'COMPLETED', NOW() - INTERVAL 1 DAY, 'staff1'),
+(2, 'COMPLETED', NOW() - INTERVAL 2 DAY, 'staff1'),
+(3, 'COMPLETED', NOW() - INTERVAL 3 DAY, 'staff1'),
+(4, 'COMPLETED', NOW() - INTERVAL 4 DAY, 'staff1'),
+(5, 'COMPLETED', NOW() - INTERVAL 5 DAY, 'staff1'),
+(6, 'COMPLETED', NOW() - INTERVAL 6 DAY, 'staff1'),
+(7, 'COMPLETED', NOW(), 'staff1'),
+
+-- 额外一些未完成的（不会进 analytics）
+(8, 'CREATED', NOW(), 'staff1'),
+(9, 'CANCELED', NOW(), 'staff1');
+
+-- =========================
+-- Order Items
+-- =========================
+
+-- Order 1
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 1, product_id, 3, price_cents FROM product WHERE name = 'Pearl Milk Tea';
+
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 1, product_id, 2, price_cents FROM product WHERE name = 'Mango Green Tea';
+
+
+-- Order 2
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 2, product_id, 4, price_cents FROM product WHERE name = 'Strawberry Oolong Tea';
+
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 2, product_id, 1, price_cents FROM product WHERE name = 'Pearl Milk Tea';
+
+
+-- Order 3
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 3, product_id, 5, price_cents FROM product WHERE name = 'Brown Sugar Boba Milk';
+
+
+-- Order 4
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 4, product_id, 2, price_cents FROM product WHERE name = 'Matcha Latte';
+
+
+-- Order 5
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 5, product_id, 6, price_cents FROM product WHERE name = 'Taro Milk Tea';
+
+
+-- Order 6
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 6, product_id, 3, price_cents FROM product WHERE name = 'Lemon Tea';
+
+
+-- Order 7
+INSERT INTO order_item (order_id, product_id, quantity, price_cents)
+SELECT 7, product_id, 7, price_cents FROM product WHERE name = 'Peach Oolong Tea';

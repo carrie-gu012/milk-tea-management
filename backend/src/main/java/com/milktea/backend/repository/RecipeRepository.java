@@ -15,7 +15,7 @@ public class RecipeRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // ⭐ 查询某 product 的 recipe（带 ingredient.type，方便前端按类型分组显示）
+
     public List<RecipeLine> findRecipeByProductId(int productId) {
 
         String sql = """
@@ -41,9 +41,7 @@ public class RecipeRepository {
         }, productId);
     }
 
-    // ⭐ 批量替换 recipe（create or update 都可以用）
-    // 这里不需要传 type：recipe 表只存 ingredient_id + qty_required，
-    // type 永远从 ingredient 表 join 出来。
+
     public void replaceRecipe(int productId, List<RecipeLine> lines) {
 
         jdbcTemplate.update("DELETE FROM recipe WHERE product_id = ?", productId);

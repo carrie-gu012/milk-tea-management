@@ -18,7 +18,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* ✅ 登录后：统一进入 AppLayout（Navbar + Outlet） */}
+
       <Route
         element={
           <RoleGate allow={["ADMIN", "STAFF"]}>

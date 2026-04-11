@@ -41,7 +41,7 @@ public class OrderItemRepository {
         ), orderId);
     }
 
-    // ✅ 新增：带 product name 的查询（用于订单详情）
+ 
     public List<OrderItemView> findItemViewsByOrderId(int orderId) {
         String sql = """
                 SELECT oi.product_id,
@@ -62,7 +62,7 @@ public class OrderItemRepository {
         ), orderId);
     }
 
-    // ✅ 内部 View 类
+
     public static class OrderItemView {
         private final int productId;
         private final String productName;

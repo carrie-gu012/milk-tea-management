@@ -8,6 +8,7 @@ import com.milktea.backend.repository.OrderItemRepository.OrderItemView;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.milktea.backend.repository.ProductRepository;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -18,13 +19,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final ProductRepository productRepository;
+
 
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
-                        JdbcTemplate jdbcTemplate) {
+                        JdbcTemplate jdbcTemplate,
+                        ProductRepository productRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.productRepository = productRepository;
     }
 
     public int createOrder(String createdBy) {
@@ -117,8 +122,11 @@ public class OrderService {
                     u.totalUsed, u.ingredientId
             );
         }
+        
+        productRepository.deactivateUnsellableProducts();
 
         orderRepository.updateStatus(orderId, "COMPLETED");
+  
     }
 
     @Transactional
@@ -176,7 +184,7 @@ public class OrderService {
         );
     }
 
-    // ✅ 新：支持 from/to 的分页查询
+
     public List<Order> listOrders(String status, String from, String to, Integer limit, Integer offset) {
         return orderRepository.findOrders(status, from, to, limit, offset);
     }
